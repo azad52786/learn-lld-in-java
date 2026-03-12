@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dependency Inversion Principle — LLD Notes</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #111827;
+      --surface2: #1a2236;
+      --border: #1f2d45;
+      --accent: #00d4ff;
+      --accent2: #ff6b35;
+      --accent3: #7c3aed;
+      --good: #10b981;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --code-bg: #0d1117;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, #0a0e17 0%, #0f1729 40%, #120d24 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 60px 40px 50px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -80px;
+      right: -80px;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -60px;
+      left: 30%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .solid-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    .solid-badge span {
+      font-size: 16px;
+    }
+
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(32px, 5vw, 54px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--accent), var(--accent3));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 560px;
+      margin-bottom: 28px;
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tag {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 32px;
+    }
+
+    /* Section titles */
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 20px;
+    }
+
+    h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 12px;
+    }
+
+    /* Definition box */
+    .definition-box {
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(124, 58, 237, 0.05));
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 24px 28px;
+      margin: 24px 0;
+      position: relative;
+    }
+
+    .definition-box .quote-icon {
+      font-size: 48px;
+      color: rgba(0, 212, 255, 0.1);
+      font-family: Georgia, serif;
+      position: absolute;
+      top: 8px;
+      right: 16px;
+      line-height: 1;
+    }
+
+    .definition-box p {
+      font-size: 16px;
+      color: #cbd5e1;
+      font-style: italic;
+      line-height: 1.8;
+    }
+
+    .definition-box strong {
+      color: var(--accent);
+      font-style: normal;
+    }
+
+    /* Simple explanation */
+    .simple-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px 26px;
+      margin: 20px 0;
+    }
+
+    .simple-box .emoji-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 10px;
+      font-family: 'Syne', sans-serif;
+      letter-spacing: 0.5px;
+    }
+
+    /* Two rule cards */
+    .two-rules {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    @media(max-width: 580px) {
+      .two-rules {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .rule-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 20px 22px;
+    }
+
+    .rule-card .rule-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 38px;
+      font-weight: 800;
+      color: rgba(0, 212, 255, 0.08);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .rule-card h4 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .rule-card p {
+      font-size: 14px;
+      color: #94a3b8;
+      margin: 0;
+    }
+
+    .rule-card code {
+      background: rgba(0, 212, 255, 0.08);
+      color: var(--accent);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+
+    /* Code blocks */
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 20px 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .code-header .lang {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .code-header .filename {
+      font-size: 12px;
+      color: var(--accent);
+    }
+
+    .code-body {
+      padding: 20px 22px;
+      overflow-x: auto;
+      line-height: 1.8;
+    }
+
+    .code-body pre {
+      white-space: pre;
+    }
+
+    /* Syntax colors */
+    .kw {
+      color: #ff79c6;
+    }
+
+    .cls {
+      color: #8be9fd;
+    }
+
+    .fn {
+      color: #50fa7b;
+    }
+
+    .str {
+      color: #f1fa8c;
+    }
+
+    .cmt {
+      color: #6272a4;
+      font-style: italic;
+    }
+
+    .ann {
+      color: #ffb86c;
+    }
+
+    .type {
+      color: #bd93f9;
+    }
+
+    .iface {
+      color: #00d4ff;
+    }
+
+    .num {
+      color: #ff6b35;
+    }
+
+    /* Good / Bad panels */
+    .panel-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    @media(max-width: 640px) {
+      .panel-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 12px 18px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel.bad .panel-header {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--bad);
+      border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .panel.good .panel-header {
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--good);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .panel.bad {
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .panel.good {
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .panel .code-block {
+      margin: 0;
+      border: none;
+      border-radius: 0;
+    }
+
+    .panel .code-header {
+      border-radius: 0;
+    }
+
+    /* Tip / alert cards */
+    .tip-card {
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin: 16px 0;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .tip-card.warn {
+      background: rgba(245, 158, 11, 0.07);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .tip-card.danger {
+      background: rgba(239, 68, 68, 0.07);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+
+    .tip-card.success {
+      background: rgba(16, 185, 129, 0.07);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .tip-card.info {
+      background: rgba(0, 212, 255, 0.05);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .tip-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .tip-content strong {
+      display: block;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .tip-card.warn .tip-content strong {
+      color: var(--warn);
+    }
+
+    .tip-card.danger .tip-content strong {
+      color: var(--bad);
+    }
+
+    .tip-card.success .tip-content strong {
+      color: var(--good);
+    }
+
+    .tip-card.info .tip-content strong {
+      color: var(--accent);
+    }
+
+    .tip-content p {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    /* Section spacing */
+    .section {
+      margin-bottom: 56px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
+    /* Summary table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--surface2);
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 12px 16px;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      color: #94a3b8;
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    td strong {
+      color: #e2e8f0;
+    }
+
+    /* Bad habits list */
+    .habit-list {
+      list-style: none;
+      margin: 16px 0;
+    }
+
+    .habit-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+
+    .habit-list li:hover {
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    .habit-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .habit-text strong {
+      display: block;
+      font-size: 14px;
+      color: #f1f5f9;
+      font-family: 'Syne', sans-serif;
+      margin-bottom: 3px;
+    }
+
+    .habit-text span {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 40px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Inline code */
+    code {
+      background: rgba(0, 212, 255, 0.08);
+      color: var(--accent);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+
+    /* Arrow flow */
+    .arrow-flow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 16px 0;
+    }
+
+    .flow-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #cbd5e1;
+    }
+
+    .flow-box.bad-box {
+      border-color: rgba(239, 68, 68, 0.4);
+      color: var(--bad);
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .flow-box.good-box {
+      border-color: rgba(16, 185, 129, 0.4);
+      color: var(--good);
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .flow-box.info-box {
+      border-color: rgba(0, 212, 255, 0.4);
+      color: var(--accent);
+      background: rgba(0, 212, 255, 0.05);
+    }
+
+    .flow-arrow {
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    .flow-arrow.bad {
+      color: var(--bad);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="solid-badge"><span>🧱</span> SOLID Principles — LLD with Java</div>
+    <h1>Dependency<br><em>Inversion</em><br>Principle</h1>
+    <p class="hero-sub">The "D" in SOLID. High-level modules must never be enslaved to low-level details — both must bow
+      to abstraction.</p>
+    <div class="hero-tags">
+      <span class="tag">Java</span>
+      <span class="tag">LLD</span>
+      <span class="tag">SOLID</span>
+      <span class="tag">Design Patterns</span>
+      <span class="tag">Clean Code</span>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- 01 DEFINITION -->
+    <div class="section">
+      <div class="section-label">01 — Definition</div>
+      <h2>What is DIP?</h2>
+
+      <div class="definition-box">
+        <div class="quote-icon">"</div>
+        <p><strong>A.</strong> High-level modules should <strong>not depend on low-level modules</strong>. Both should
+          depend on abstractions.<br><br>
+          <strong>B.</strong> Abstractions should <strong>not depend on details</strong>. Details (concrete
+          implementations) should depend on abstractions.
+        </p>
+        <p style="margin-top:10px; font-size:13px; color:#475569; font-style:normal;">— Robert C. Martin (Uncle Bob)</p>
+      </div>
+
+      <div class="simple-box">
+        <div class="emoji-title">🧠 In Plain English</div>
+        <p>Your high-level business logic (e.g. <code>OrderService</code>) should talk to an <em>interface</em>, not
+          directly to <code>MySQLDatabase</code> or <code>GmailService</code>. Want to swap MySQL for MongoDB tomorrow?
+          Your business logic shouldn't need to change <strong>at all</strong>.</p>
+      </div>
+
+      <div class="two-rules">
+        <div class="rule-card">
+          <div class="rule-num">01</div>
+          <h4>Rule One</h4>
+          <p>High-level modules (business logic) must <em>not</em> instantiate or import concrete low-level classes.
+            Depend on <code>interface</code> or <code>abstract class</code>.</p>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">02</div>
+          <h4>Rule Two</h4>
+          <p>Abstractions describe <em>what</em> you need, not <em>how</em> it works. The interface is the socket — the
+            concrete class is just the plug.</p>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 02 WHY -->
+    <div class="section">
+      <div class="section-label">02 — Why It Matters</div>
+      <h2>Why Should You Use DIP?</h2>
+
+      <table>
+        <tr>
+          <th>Without DIP</th>
+          <th>With DIP</th>
+        </tr>
+        <tr>
+          <td>Business logic is <strong>glued</strong> to a specific DB, email provider, or payment gateway</td>
+          <td>Business logic talks to an interface — swap the implementation anytime</td>
+        </tr>
+        <tr>
+          <td>Unit testing is painful — you can't mock a <code>new MySQL()</code> inside a method</td>
+          <td>Easy to inject a <code>MockDatabase</code> in tests — no real DB needed</td>
+        </tr>
+        <tr>
+          <td>Changing a low-level class forces changes throughout the codebase</td>
+          <td>Only the concrete class changes — everything else stays untouched</td>
+        </tr>
+        <tr>
+          <td>Tightly coupled — changing vendor = rewriting logic</td>
+          <td>Loosely coupled — add new implementations without touching old code</td>
+        </tr>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 03 BAD EXAMPLE -->
+    <div class="section">
+      <div class="section-label">03 — Bad Example (Violating DIP)</div>
+      <h2>❌ The Problem: Depending on Concrete Classes</h2>
+
+      <p style="color:#94a3b8; margin-bottom:18px;">An <code>OrderService</code> that hardcodes
+        <code>MySQLDatabase</code> and <code>GmailService</code> directly — the classic DIP violation.
+      </p>
+
+      <div class="panel-grid">
+        <div class="panel bad">
+          <div class="panel-header">⚠️ BAD — Concrete low-level class</div>
+          <div class="code-block">
+            <div class="code-header"><span class="lang">Java</span><span class="filename">MySQLDatabase.java</span>
+            </div>
+            <div class="code-body">
+              <pre><span class="kw">public class</span> <span class="cls">MySQLDatabase</span> {
+    <span class="kw">public void</span> <span class="fn">save</span>(String data) {
+        System.out.println(
+          <span class="str">"MySQL: "</span> + data);
+    }
+}</pre>
+            </div>
+          </div>
+        </div>
+        <div class="panel bad">
+          <div class="panel-header">⚠️ BAD — Concrete low-level class</div>
+          <div class="code-block">
+            <div class="code-header"><span class="lang">Java</span><span class="filename">GmailService.java</span></div>
+            <div class="code-body">
+              <pre><span class="kw">public class</span> <span class="cls">GmailService</span> {
+    <span class="kw">public void</span> <span class="fn">sendEmail</span>(String msg) {
+        System.out.println(
+          <span class="str">"Gmail: "</span> + msg);
+    }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">OrderService.java — ❌ VIOLATES DIP</span>
+        </div>
+        <div class="code-body">
+          <pre><span class="kw">public class</span> <span class="cls">OrderService</span> {
+
+    <span class="cmt">// ❌ High-level class directly instantiates low-level classes!</span>
+    <span class="kw">private</span> <span class="cls">MySQLDatabase</span> database = <span class="kw">new</span> <span class="cls">MySQLDatabase</span>();
+    <span class="kw">private</span> <span class="cls">GmailService</span>   emailer  = <span class="kw">new</span> <span class="cls">GmailService</span>();
+
+    <span class="kw">public void</span> <span class="fn">placeOrder</span>(String order) {
+        database.<span class="fn">save</span>(order);      <span class="cmt">// ❌ tied to MySQL forever</span>
+        emailer.<span class="fn">sendEmail</span>(order);  <span class="cmt">// ❌ tied to Gmail forever</span>
+        System.out.println(<span class="str">"Order placed!"</span>);
+    }
+}</pre>
+        </div>
+      </div>
+
+      <div class="tip-card danger">
+        <div class="tip-icon">🚨</div>
+        <div class="tip-content">
+          <strong>Why This Breaks Everything</strong>
+          <p>Want to switch MySQL → MongoDB? You must edit <code>OrderService</code>. Want to unit test without a real
+            database? You can't — it's hardwired inside. Every change to a low-level class risks breaking business
+            logic.</p>
+        </div>
+      </div>
+
+      <div class="arrow-flow">
+        <div class="flow-box bad-box">OrderService</div>
+        <div class="flow-arrow bad">——depends on——▶</div>
+        <div class="flow-box bad-box">MySQLDatabase</div>
+        <div class="flow-arrow bad">+</div>
+        <div class="flow-box bad-box">GmailService</div>
+      </div>
+      <p style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace; margin-top:4px;">↑
+        High-level depends directly on low-level. Fragile. Untestable. Rigid.</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 04 GOOD EXAMPLE -->
+    <div class="section">
+      <div class="section-label">04 — Good Example (Following DIP)</div>
+      <h2>✅ The Fix: Depend on Abstractions</h2>
+
+      <p style="color:#94a3b8; margin-bottom:18px;">Create interfaces for all external dependencies. Inject them from
+        outside. <code>OrderService</code> only ever knows the interfaces — never the concrete classes.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">Step 1 — Define Abstractions</span>
+        </div>
+        <div class="code-body">
+          <pre><span class="cmt">// ✅ Abstraction for storage — doesn't care HOW data is stored</span>
+<span class="kw">public interface</span> <span class="iface">Database</span> {
+    <span class="kw">void</span> <span class="fn">save</span>(String data);
+}
+
+<span class="cmt">// ✅ Abstraction for notifications — doesn't care which provider</span>
+<span class="kw">public interface</span> <span class="iface">NotificationService</span> {
+    <span class="kw">void</span> <span class="fn">send</span>(String message);
+}</pre>
+        </div>
+      </div>
+
+      <div class="panel-grid">
+        <div class="panel good">
+          <div class="panel-header">✅ MySQL — implements Database</div>
+          <div class="code-block">
+            <div class="code-header"><span class="lang">Java</span><span class="filename">MySQLDatabase.java</span>
+            </div>
+            <div class="code-body">
+              <pre><span class="kw">public class</span> <span class="cls">MySQLDatabase</span>
+    <span class="kw">implements</span> <span class="iface">Database</span> {
+
+  <span class="ann">@Override</span>
+  <span class="kw">public void</span> <span class="fn">save</span>(String data) {
+    System.out.println(
+      <span class="str">"MySQL: "</span> + data);
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+        <div class="panel good">
+          <div class="panel-header">✅ MongoDB — swap with zero changes!</div>
+          <div class="code-block">
+            <div class="code-header"><span class="lang">Java</span><span class="filename">MongoDatabase.java</span>
+            </div>
+            <div class="code-body">
+              <pre><span class="kw">public class</span> <span class="cls">MongoDatabase</span>
+    <span class="kw">implements</span> <span class="iface">Database</span> {
+
+  <span class="ann">@Override</span>
+  <span class="kw">public void</span> <span class="fn">save</span>(String data) {
+    System.out.println(
+      <span class="str">"MongoDB: "</span> + data);
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-grid">
+        <div class="panel good">
+          <div class="panel-header">✅ Gmail — implements NotificationService</div>
+          <div class="code-block">
+            <div class="code-header"><span class="lang">Java</span><span class="filename">GmailService.java</span></div>
+            <div class="code-body">
+              <pre><span class="kw">public class</span> <span class="cls">GmailService</span>
+    <span class="kw">implements</span> <span class="iface">NotificationService</span> {
+
+  <span class="ann">@Override</span>
+  <span class="kw">public void</span> <span class="fn">send</span>(String msg) {
+    System.out.println(
+      <span class="str">"Gmail: "</span> + msg);
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+        <div class="panel good">
+          <div class="panel-header">✅ SMS — plug in without any changes!</div>
+          <div class="code-block">
+            <div class="code-header"><span class="lang">Java</span><span class="filename">SMSService.java</span></div>
+            <div class="code-body">
+              <pre><span class="kw">public class</span> <span class="cls">SMSService</span>
+    <span class="kw">implements</span> <span class="iface">NotificationService</span> {
+
+  <span class="ann">@Override</span>
+  <span class="kw">public void</span> <span class="fn">send</span>(String msg) {
+    System.out.println(
+      <span class="str">"SMS: "</span> + msg);
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">OrderService.java + Main.java — ✅ FOLLOWS DIP</span>
+        </div>
+        <div class="code-body">
+          <pre><span class="kw">public class</span> <span class="cls">OrderService</span> {
+
+    <span class="cmt">// ✅ Depends on ABSTRACTIONS — not concrete classes</span>
+    <span class="kw">private final</span> <span class="iface">Database</span>            database;
+    <span class="kw">private final</span> <span class="iface">NotificationService</span> notifier;
+
+    <span class="cmt">// ✅ Dependencies INJECTED from outside (Constructor Injection)</span>
+    <span class="kw">public</span> <span class="fn">OrderService</span>(<span class="iface">Database</span> db, <span class="iface">NotificationService</span> notifier) {
+        <span class="kw">this</span>.database = db;
+        <span class="kw">this</span>.notifier = notifier;
+    }
+
+    <span class="kw">public void</span> <span class="fn">placeOrder</span>(String order) {
+        database.<span class="fn">save</span>(order);     <span class="cmt">// talks to interface ✅</span>
+        notifier.<span class="fn">send</span>(order);     <span class="cmt">// talks to interface ✅</span>
+        System.out.println(<span class="str">"Order placed!"</span>);
+    }
+}
+
+<span class="cmt">// ── Wiring in Main ─────────────────────────────────────────</span>
+<span class="kw">public class</span> <span class="cls">Main</span> {
+    <span class="kw">public static void</span> <span class="fn">main</span>(String[] args) {
+
+        <span class="cmt">// Swap implementations with ZERO changes to OrderService</span>
+        <span class="iface">Database</span>            db      = <span class="kw">new</span> <span class="cls">MySQLDatabase</span>();  <span class="cmt">// or MongoDatabase</span>
+        <span class="iface">NotificationService</span> emailer = <span class="kw">new</span> <span class="cls">GmailService</span>();   <span class="cmt">// or SMSService</span>
+
+        <span class="cls">OrderService</span> service = <span class="kw">new</span> <span class="cls">OrderService</span>(db, emailer);
+        service.<span class="fn">placeOrder</span>(<span class="str">"Order #1042"</span>);
+    }
+}</pre>
+        </div>
+      </div>
+
+      <div class="tip-card success">
+        <div class="tip-icon">✅</div>
+        <div class="tip-content">
+          <strong>What Changed</strong>
+          <p><code>OrderService</code> no longer has a single <code>new</code> keyword for its dependencies. To switch
+            MySQL → MongoDB, change one line in <code>Main</code>. Business logic: completely untouched.</p>
+        </div>
+      </div>
+
+      <div class="arrow-flow">
+        <div class="flow-box info-box">OrderService</div>
+        <div class="flow-arrow">——depends on——▶</div>
+        <div class="flow-box info-box">«interface» Database</div>
+        <div class="flow-arrow">◀——implemented by——</div>
+        <div class="flow-box good-box">MySQLDatabase</div>
+      </div>
+      <p style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace; margin-top:4px;">↑ Both
+        high-level and low-level depend on the abstraction. Stable. Testable. Flexible.</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 05 INJECTION TYPES -->
+    <div class="section">
+      <div class="section-label">05 — How to Inject</div>
+      <h2>🔌 Three Ways to Inject Dependencies</h2>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">Three Dependency Injection Patterns</span>
+        </div>
+        <div class="code-body">
+          <pre><span class="cmt">// ── 1. CONSTRUCTOR INJECTION (⭐ Preferred) ──────────────────</span>
+<span class="kw">public class</span> <span class="cls">OrderService</span> {
+    <span class="kw">private final</span> <span class="iface">Database</span> db;
+
+    <span class="kw">public</span> <span class="fn">OrderService</span>(<span class="iface">Database</span> db) { <span class="kw">this</span>.db = db; }
+    <span class="cmt">// ✅ Dependency is clear, required, and immutable (final)</span>
+}
+
+<span class="cmt">// ── 2. SETTER INJECTION ──────────────────────────────────────</span>
+<span class="kw">public class</span> <span class="cls">OrderService</span> {
+    <span class="kw">private</span> <span class="iface">Database</span> db;
+
+    <span class="kw">public void</span> <span class="fn">setDatabase</span>(<span class="iface">Database</span> db) { <span class="kw">this</span>.db = db; }
+    <span class="cmt">// ⚠️ Optional dependency — object can exist without it</span>
+}
+
+<span class="cmt">// ── 3. INTERFACE INJECTION ───────────────────────────────────</span>
+<span class="kw">public interface</span> <span class="iface">DatabaseInjectable</span> {
+    <span class="kw">void</span> <span class="fn">injectDatabase</span>(<span class="iface">Database</span> db);
+}
+<span class="kw">public class</span> <span class="cls">OrderService</span> <span class="kw">implements</span> <span class="iface">DatabaseInjectable</span> {
+    <span class="kw">private</span> <span class="iface">Database</span> db;
+
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">injectDatabase</span>(<span class="iface">Database</span> db) { <span class="kw">this</span>.db = db; }
+    <span class="cmt">// 🔵 Rarely used — more common inside frameworks</span>
+}</pre>
+        </div>
+      </div>
+
+      <div class="tip-card info">
+        <div class="tip-icon">💡</div>
+        <div class="tip-content">
+          <strong>Constructor Injection is King</strong>
+          <p>Always prefer constructor injection. It makes dependencies explicit, enables immutability with
+            <code>final</code>, and makes it impossible to create a broken object that's missing a required dependency.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 06 BAD HABITS -->
+    <div class="section">
+      <div class="section-label">06 — Watch Out</div>
+      <h2>🚩 Bad Habits to Avoid</h2>
+
+      <ul class="habit-list">
+        <li>
+          <span class="habit-icon">🏗️</span>
+          <div class="habit-text">
+            <strong>Using <code>new</code> inside a class for dependencies</strong>
+            <span>Writing <code>private Database db = new MySQLDatabase();</code> inside a service is the most common
+              DIP violation. The moment you write <code>new ConcreteClass()</code> for a dependency, you've hardwired it
+              forever.</span>
+          </div>
+        </li>
+        <li>
+          <span class="habit-icon">🔗</span>
+          <div class="habit-text">
+            <strong>Importing concrete low-level classes in high-level modules</strong>
+            <span>If your <code>OrderService.java</code> has <code>import com.db.MySQLDatabase</code> at the top —
+              that's a red flag. High-level modules should only import interfaces.</span>
+          </div>
+        </li>
+        <li>
+          <span class="habit-icon">🧪</span>
+          <div class="habit-text">
+            <strong>Writing untestable code due to hardcoded dependencies</strong>
+            <span>If you can't write a unit test without a real database or a real email being sent — your class
+              violates DIP. Testability is a direct proxy for good design.</span>
+          </div>
+        </li>
+        <li>
+          <span class="habit-icon">📦</span>
+          <div class="habit-text">
+            <strong>Putting business logic inside the concrete implementation</strong>
+            <span>Validation and business rules belong in the high-level service — not buried in
+              <code>MySQLDatabase.save()</code>. Low-level classes should be dumb executors, nothing more.</span>
+          </div>
+        </li>
+        <li>
+          <span class="habit-icon">⚙️</span>
+          <div class="habit-text">
+            <strong>Confusing DIP with Dependency Injection (DI)</strong>
+            <span>DIP is the <em>principle</em> (depend on abstractions). DI is one <em>technique</em> to achieve it.
+              You can have DI without DIP (injecting concrete classes directly), but good DI always supports DIP.</span>
+          </div>
+        </li>
+        <li>
+          <span class="habit-icon">🏛️</span>
+          <div class="habit-text">
+            <strong>Interfaces that leak implementation details</strong>
+            <span>An interface with <code>executeSQLQuery(String sql)</code> is not a real abstraction — it's a MySQL
+              wrapper in disguise. A good abstraction says <code>save(Order order)</code> with zero implementation
+              specifics.</span>
+          </div>
+        </li>
+      </ul>
+
+      <div class="tip-card warn">
+        <div class="tip-icon">💡</div>
+        <div class="tip-content">
+          <strong>The Litmus Test</strong>
+          <p>Can you replace the implementation (DB, email, payment) with a mock in a unit test <em>without changing the
+              class under test</em>? If yes — you're following DIP. If no — time to refactor.</p>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 07 CHEATSHEET -->
+    <div class="section">
+      <div class="section-label">07 — Summary</div>
+      <h2>📋 Quick Cheatsheet</h2>
+
+      <table>
+        <tr>
+          <th>Topic</th>
+          <th>Key Point</th>
+        </tr>
+        <tr>
+          <td><strong>What</strong></td>
+          <td>High-level modules must depend on interfaces, not concrete classes</td>
+        </tr>
+        <tr>
+          <td><strong>How</strong></td>
+          <td>Define interfaces for all external dependencies. Inject via constructor.</td>
+        </tr>
+        <tr>
+          <td><strong>Smell</strong></td>
+          <td><code>new ConcreteClass()</code> inside a service, or concrete class imports in business logic</td>
+        </tr>
+        <tr>
+          <td><strong>Benefit</strong></td>
+          <td>Swap implementations freely, easy unit testing with mocks, loose coupling</td>
+        </tr>
+        <tr>
+          <td><strong>DIP vs DI</strong></td>
+          <td>DIP = principle (depend on abstractions). DI = technique (inject from outside).</td>
+        </tr>
+        <tr>
+          <td><strong>Best Pattern</strong></td>
+          <td>Constructor injection + <code>final</code> fields — clear, immutable, fail-fast</td>
+        </tr>
+        <tr>
+          <td><strong>Works With</strong></td>
+          <td>OCP (new implementations without changing old code), ISP (small interfaces), SRP</td>
+        </tr>
+      </table>
+
+      <div class="tip-card info">
+        <div class="tip-icon">🎯</div>
+        <div class="tip-content">
+          <strong>The Golden Rule</strong>
+          <p>If <code>OrderService</code> contains the words <code>MySQL</code>, <code>Gmail</code>, or
+            <code>Stripe</code> anywhere in its file — it has already violated DIP. High-level policy must never know
+            the name of a low-level detail.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    LLD Notes — Dependency Inversion Principle &nbsp;·&nbsp; SOLID Series &nbsp;·&nbsp; Java
+  </div>
+
+</body>
+
+</html>
