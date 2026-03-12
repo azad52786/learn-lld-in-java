@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Patterns — Types & Why We Use Them</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1f2d45;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --good: #10b981;
+    --bad: #ef4444;
+    --warn: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --code-bg: #0d1117;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, #0a0e17 0%, #0f1729 40%, #120d24 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 40px 50px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,212,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 30%;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .solid-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.25);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .solid-badge span { font-size: 16px; }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5vw, 54px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 560px;
+    margin-bottom: 28px;
+  }
+
+  .hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 32px;
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 20px;
+  }
+  h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+  }
+
+  .section { margin-bottom: 56px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+  /* ── DEFINITION BOX ── */
+  .definition-box {
+    background: linear-gradient(135deg, rgba(0,212,255,0.05), rgba(124,58,237,0.05));
+    border: 1px solid rgba(0,212,255,0.2);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin: 24px 0;
+    position: relative;
+  }
+  .definition-box .quote-icon {
+    font-size: 48px;
+    color: rgba(0,212,255,0.1);
+    font-family: Georgia, serif;
+    position: absolute;
+    top: 8px; right: 16px;
+    line-height: 1;
+  }
+  .definition-box p {
+    font-size: 16px;
+    color: #cbd5e1;
+    font-style: italic;
+    line-height: 1.8;
+  }
+  .definition-box strong { color: var(--accent); font-style: normal; }
+
+  /* ── SIMPLE BOX ── */
+  .simple-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 26px;
+    margin: 20px 0;
+  }
+  .simple-box .emoji-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent2);
+    margin-bottom: 10px;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.5px;
+  }
+  .simple-box p { color: #94a3b8; font-size: 14px; margin: 0; }
+
+  /* ── PATTERN TYPE CARDS ── */
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 28px 0;
+  }
+  @media(max-width: 680px) { .type-grid { grid-template-columns: 1fr; } }
+
+  .type-card {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .type-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  }
+  .type-card.creational { border-color: rgba(0,212,255,0.2); }
+  .type-card.structural  { border-color: rgba(124,58,237,0.2); }
+  .type-card.behavioral  { border-color: rgba(255,107,53,0.2); }
+
+  .type-card-header {
+    padding: 20px 20px 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .type-card.creational .type-card-header { background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(0,212,255,0.03)); }
+  .type-card.structural  .type-card-header { background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(124,58,237,0.03)); }
+  .type-card.behavioral  .type-card-header { background: linear-gradient(135deg, rgba(255,107,53,0.1), rgba(255,107,53,0.03)); }
+
+  .type-icon { font-size: 32px; margin-bottom: 10px; display: block; }
+
+  .type-card-header h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .type-card.creational .type-card-header h3 { color: var(--accent); }
+  .type-card.structural  .type-card-header h3 { color: #a78bfa; }
+  .type-card.behavioral  .type-card-header h3 { color: var(--accent2); }
+
+  .type-card-header .type-tagline {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .type-card-body {
+    padding: 16px 20px 20px;
+    background: var(--surface);
+  }
+  .type-card-body p {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.65;
+    margin-bottom: 14px;
+  }
+
+  .pattern-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    padding: 3px 9px;
+    border-radius: 3px;
+    border: 1px solid;
+  }
+  .type-card.creational .pill { color: var(--accent);  border-color: rgba(0,212,255,0.25);  background: rgba(0,212,255,0.07); }
+  .type-card.structural  .pill { color: #a78bfa; border-color: rgba(124,58,237,0.25); background: rgba(124,58,237,0.07); }
+  .type-card.behavioral  .pill { color: var(--accent2); border-color: rgba(255,107,53,0.25);  background: rgba(255,107,53,0.07); }
+
+  /* ── DEEP DIVE CARD ── */
+  .deep-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 20px 0;
+  }
+  .deep-card-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .deep-card-header .icon { font-size: 24px; flex-shrink: 0; }
+  .deep-card-header .hd-text {}
+  .deep-card-header .hd-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .deep-card.creational .deep-card-header .hd-label { color: var(--accent); }
+  .deep-card.structural  .deep-card-header .hd-label { color: #a78bfa; }
+  .deep-card.behavioral  .deep-card-header .hd-label { color: var(--accent2); }
+
+  .deep-card-header h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0;
+  }
+
+  .deep-card-body { padding: 22px 24px; }
+  .deep-card-body p { color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.7; }
+
+  /* ── WHY USE ROW ── */
+  .why-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  @media(max-width: 560px) { .why-grid { grid-template-columns: 1fr; } }
+
+  .why-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .why-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .why-text strong {
+    display: block;
+    font-size: 13px;
+    font-family: 'Syne', sans-serif;
+    color: #e2e8f0;
+    margin-bottom: 3px;
+  }
+  .why-text span { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* ── PATTERN LIST INSIDE DEEP CARD ── */
+  .pattern-list { list-style: none; margin: 4px 0 0; }
+  .pattern-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: var(--surface2);
+    transition: border-color 0.2s;
+  }
+  .deep-card.creational .pattern-list li:hover { border-color: rgba(0,212,255,0.35); }
+  .deep-card.structural  .pattern-list li:hover { border-color: rgba(124,58,237,0.35); }
+  .deep-card.behavioral  .pattern-list li:hover { border-color: rgba(255,107,53,0.35); }
+
+  .pattern-list li .p-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 130px;
+    flex-shrink: 0;
+  }
+  .deep-card.creational .pattern-list li .p-name { color: var(--accent); }
+  .deep-card.structural  .pattern-list li .p-name { color: #a78bfa; }
+  .deep-card.behavioral  .pattern-list li .p-name { color: var(--accent2); }
+
+  .pattern-list li .p-desc { font-size: 13px; color: #94a3b8; line-height: 1.5; }
+
+  /* ── TIP CARDS ── */
+  .tip-card {
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 16px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .tip-card.warn    { background: rgba(245,158,11,0.07);  border: 1px solid rgba(245,158,11,0.25); }
+  .tip-card.info    { background: rgba(0,212,255,0.05);   border: 1px solid rgba(0,212,255,0.2); }
+  .tip-card.success { background: rgba(16,185,129,0.07);  border: 1px solid rgba(16,185,129,0.25); }
+  .tip-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+  .tip-content strong { display: block; font-family: 'Syne', sans-serif; font-size: 14px; margin-bottom: 5px; }
+  .tip-card.warn    .tip-content strong { color: var(--warn); }
+  .tip-card.info    .tip-content strong { color: var(--accent); }
+  .tip-card.success .tip-content strong { color: var(--good); }
+  .tip-content p { font-size: 14px; color: #94a3b8; }
+
+  /* ── COMPARISON TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  td {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    color: #94a3b8;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  td strong { color: #e2e8f0; }
+  td code {
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  .cr { color: var(--accent)  !important; }
+  .st { color: #a78bfa        !important; }
+  .bh { color: var(--accent2) !important; }
+
+  /* ── INLINE CODE ── */
+  code {
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="solid-badge"><span>🧩</span> LLD with Java — Gang of Four</div>
+  <h1>Design<br><em>Patterns</em></h1>
+  <p class="hero-sub">What they are, the three types, why each type exists, and which patterns belong where — your complete orientation guide.</p>
+  <div class="hero-tags">
+    <span class="tag">Java</span>
+    <span class="tag">LLD</span>
+    <span class="tag">GoF Patterns</span>
+    <span class="tag">Creational</span>
+    <span class="tag">Structural</span>
+    <span class="tag">Behavioral</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ── 01 WHAT ARE DESIGN PATTERNS ── -->
+  <div class="section">
+    <div class="section-label">01 — Foundation</div>
+    <h2>What Are Design Patterns?</h2>
+
+    <div class="definition-box">
+      <div class="quote-icon">"</div>
+      <p>Design patterns are <strong>reusable solutions to commonly occurring problems</strong> in software design. They are not finished code — they are <strong>templates</strong> that describe how to solve a problem in a flexible, proven way.</p>
+      <p style="margin-top:10px; font-size:13px; color:#475569; font-style:normal;">— Gang of Four (GoF), Design Patterns: Elements of Reusable Object-Oriented Software, 1994</p>
+    </div>
+
+    <div class="simple-box">
+      <div class="emoji-title">🧠 In Plain English</div>
+      <p>Imagine you're building a house. Instead of re-inventing how to build a door frame every time, you follow a proven blueprint. Design patterns are those <strong>blueprints for code</strong> — tried-and-tested ways to structure classes and objects so your code stays clean, flexible, and maintainable.</p>
+    </div>
+
+    <div class="tip-card info">
+      <div class="tip-icon">📖</div>
+      <div class="tip-content">
+        <strong>Origin — The Gang of Four (GoF)</strong>
+        <p>In 1994, four authors — Erich Gamma, Richard Helm, Ralph Johnson, and John Vlissides — published the seminal book that catalogued <strong>23 classic design patterns</strong> grouped into 3 categories. Every Java developer should know these.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 02 THREE TYPES OVERVIEW ── -->
+  <div class="section">
+    <div class="section-label">02 — The Three Categories</div>
+    <h2>3 Types of Design Patterns</h2>
+
+    <p style="color:#94a3b8; margin-bottom:24px;">The 23 GoF patterns are grouped by the <em>kind of problem they solve</em>. Each type targets a completely different stage of your design.</p>
+
+    <div class="type-grid">
+
+      <!-- CREATIONAL -->
+      <div class="type-card creational">
+        <div class="type-card-header">
+          <span class="type-icon">🏭</span>
+          <h3>Creational</h3>
+          <div class="type-tagline">How objects are created</div>
+        </div>
+        <div class="type-card-body">
+          <p>Controls the <strong>creation process</strong> of objects. Removes tight coupling between what you create and how you create it.</p>
+          <div class="pattern-pills">
+            <span class="pill">Singleton</span>
+            <span class="pill">Factory Method</span>
+            <span class="pill">Abstract Factory</span>
+            <span class="pill">Builder</span>
+            <span class="pill">Prototype</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STRUCTURAL -->
+      <div class="type-card structural">
+        <div class="type-card-header">
+          <span class="type-icon">🏗️</span>
+          <h3>Structural</h3>
+          <div class="type-tagline">How objects are composed</div>
+        </div>
+        <div class="type-card-body">
+          <p>Deals with <strong>assembling objects</strong> into larger structures while keeping them flexible and efficient.</p>
+          <div class="pattern-pills">
+            <span class="pill">Adapter</span>
+            <span class="pill">Bridge</span>
+            <span class="pill">Composite</span>
+            <span class="pill">Decorator</span>
+            <span class="pill">Facade</span>
+            <span class="pill">Flyweight</span>
+            <span class="pill">Proxy</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BEHAVIORAL -->
+      <div class="type-card behavioral">
+        <div class="type-card-header">
+          <span class="type-icon">🔄</span>
+          <h3>Behavioral</h3>
+          <div class="type-tagline">How objects communicate</div>
+        </div>
+        <div class="type-card-body">
+          <p>Handles <strong>communication and responsibility</strong> between objects. Defines how they interact and distribute work.</p>
+          <div class="pattern-pills">
+            <span class="pill">Observer</span>
+            <span class="pill">Strategy</span>
+            <span class="pill">Command</span>
+            <span class="pill">Iterator</span>
+            <span class="pill">State</span>
+            <span class="pill">Template Method</span>
+            <span class="pill">Chain of Resp.</span>
+            <span class="pill">Mediator</span>
+            <span class="pill">Memento</span>
+            <span class="pill">Visitor</span>
+            <span class="pill">Interpreter</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="tip-card info">
+      <div class="tip-icon">💡</div>
+      <div class="tip-content">
+        <strong>Easy Way to Remember the 3 Types</strong>
+        <p><strong>Creational</strong> = <em>Birth</em> of objects &nbsp;·&nbsp; <strong>Structural</strong> = <em>Body</em> of the system &nbsp;·&nbsp; <strong>Behavioral</strong> = <em>Behavior</em> / conversations between objects.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 03 CREATIONAL DEEP DIVE ── -->
+  <div class="section">
+    <div class="section-label">03 — Type One</div>
+    <h2>🏭 Creational Patterns</h2>
+
+    <div class="deep-card creational">
+      <div class="deep-card-header">
+        <div class="icon">🏭</div>
+        <div class="hd-text">
+          <div class="hd-label">Creational Patterns</div>
+          <h3>Object Creation — Controlled & Flexible</h3>
+        </div>
+      </div>
+      <div class="deep-card-body">
+        <p>Creational patterns abstract the <strong>instantiation process</strong>. They make a system independent of how its objects are created, composed, and represented. Instead of calling <code>new SomeClass()</code> scattered everywhere, creational patterns give you a structured, centralized way to produce objects.</p>
+
+        <div class="why-grid">
+          <div class="why-item">
+            <div class="why-icon">🔧</div>
+            <div class="why-text"><strong>Why Use?</strong><span>Avoid scattering <code>new</code> keywords everywhere. Centralise object creation logic.</span></div>
+          </div>
+          <div class="why-item">
+            <div class="why-icon">🔄</div>
+            <div class="why-text"><strong>Flexibility</strong><span>Swap the type of object being created without changing the code that uses it.</span></div>
+          </div>
+          <div class="why-item">
+            <div class="why-icon">🧪</div>
+            <div class="why-text"><strong>Testability</strong><span>Inject mock objects easily in unit tests instead of hardcoded instances.</span></div>
+          </div>
+          <div class="why-item">
+            <div class="why-icon">♻️</div>
+            <div class="why-text"><strong>Reuse</strong><span>Control object lifecycle — reuse existing instances (Singleton, Prototype) instead of creating new ones.</span></div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:20px;">Patterns in this group:</h3>
+        <ul class="pattern-list">
+          <li>
+            <span class="p-name">Singleton</span>
+            <span class="p-desc">Ensures a class has <strong>only one instance</strong> and provides a global access point to it. Used for shared resources like DB connections, config, logging.</span>
+          </li>
+          <li>
+            <span class="p-name">Factory Method</span>
+            <span class="p-desc">Defines an interface for creating an object but lets <strong>subclasses decide which class to instantiate</strong>. Removes the need to bind the code to specific classes.</span>
+          </li>
+          <li>
+            <span class="p-name">Abstract Factory</span>
+            <span class="p-desc">Creates <strong>families of related objects</strong> without specifying their concrete classes. Think UI toolkit — same code works for Windows buttons or Mac buttons.</span>
+          </li>
+          <li>
+            <span class="p-name">Builder</span>
+            <span class="p-desc">Separates the <strong>construction of a complex object</strong> from its representation. Perfect for objects with many optional parameters (avoids telescoping constructors).</span>
+          </li>
+          <li>
+            <span class="p-name">Prototype</span>
+            <span class="p-desc">Creates new objects by <strong>copying (cloning) an existing object</strong>. Useful when object creation is expensive and an existing similar object can be duplicated.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 04 STRUCTURAL DEEP DIVE ── -->
+  <div class="section">
+    <div class="section-label">04 — Type Two</div>
+    <h2>🏗️ Structural Patterns</h2>
+
+    <div class="deep-card structural">
+      <div class="deep-card-header">
+        <div class="icon">🏗️</div>
+        <div class="hd-text">
+          <div class="hd-label">Structural Patterns</div>
+          <h3>Object Composition — Building Larger Structures</h3>
+        </div>
+      </div>
+      <div class="deep-card-body">
+        <p>Structural patterns deal with <strong>how classes and objects are composed</strong> to form larger structures. They use inheritance and composition to build flexible, efficient structures — like assembling building blocks — without creating rigid, fragile hierarchies.</p>
+
+        <div class="why-grid">
+          <div class="why-item">
+            <div class="why-icon">🔌</div>
+            <div class="why-text"><strong>Compatibility</strong><span>Make incompatible interfaces work together without changing their source code (Adapter).</span></div>
+          </div>
+          <div class="why-item">
+            <div class="why-icon">🧩</div>
+            <div class="why-text"><strong>Simplicity</strong><span>Hide complex subsystem details behind a simple interface (Facade).</span></div>
+          </div>
+          <div class="why-item">
+            <div class="why-icon">🎨</div>
+            <div class="why-text"><strong>Extensibility</strong><span>Add behaviour to objects dynamically without subclassing (Decorator).</span></div>
+          </div>
+          <div class="why-item">
+            <div class="why-icon">🛡️</div>
+            <div class="why-text"><strong>Control</strong><span>Control access to objects, add caching, logging, or security around them (Proxy).</span></div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:20px;">Patterns in this group:</h3>
+        <ul class="pattern-list">
+          <li>
+            <span class="p-name">Adapter</span>
+            <span class="p-desc">Acts as a <strong>translator between two incompatible interfaces</strong>. Like a power plug adapter — your device doesn't change, the socket doesn't change, the adapter bridges them.</span>
+          </li>
+          <li>
+            <span class="p-name">Bridge</span>
+            <span class="p-desc"><strong>Decouples an abstraction from its implementation</strong> so both can vary independently. Separates "what something does" from "how it does it".</span>
+          </li>
+          <li>
+            <span class="p-name">Composite</span>
+            <span class="p-desc">Treats <strong>individual objects and compositions of objects uniformly</strong>. Perfect for tree structures — files and folders, UI components, org charts.</span>
+          </li>
+          <li>
+            <span class="p-name">Decorator</span>
+            <span class="p-desc"><strong>Adds new behaviours to objects dynamically</strong> by wrapping them. Avoids an explosion of subclasses for every combination of features.</span>
+          </li>
+          <li>
+            <span class="p-name">Facade</span>
+            <span class="p-desc">Provides a <strong>simplified interface to a complex subsystem</strong>. One easy entry point hides all the underlying complexity from the client.</span>
+          </li>
+          <li>
+            <span class="p-name">Flyweight</span>
+            <span class="p-desc"><strong>Shares common state between many fine-grained objects</strong> to reduce memory usage. Used when you need huge numbers of similar objects (e.g. characters in a text editor).</span>
+          </li>
+          <li>
+            <span class="p-name">Proxy</span>
+            <span class="p-desc">Provides a <strong>surrogate or placeholder</strong> for another object to control access to it. Used for lazy loading, caching, access control, and logging.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 05 BEHAVIORAL DEEP DIVE ── -->
+  <div class="section">
+    <div class="section-label">05 — Type Three</div>
+    <h2>🔄 Behavioral Patterns</h2>
+
+    <div class="deep-card behavioral">
+      <div class="deep-card-header">
+        <div class="icon">🔄</div>
+        <div class="hd-text">
+          <div class="hd-label">Behavioral Patterns</div>
+          <h3>Object Communication — Who Does What</h3>
+        </div>
+      </div>
+      <div class="deep-card-body">
+        <p>Behavioral patterns are concerned with <strong>algorithms and the assignment of responsibilities between objects</strong>. They describe not just patterns of objects or classes but also the patterns of communication between them — who talks to whom, and how work flows.</p>
+
+        <div class="why-grid">
+          <div class="why-item">
+            <div class="why-icon">📢</div>
+            <div class="why-text"><strong>Loose Coupling</strong><span>Objects communicate without knowing each other's concrete types (Observer, Mediator).</span></div>
+          </div>
+          <div class="why-item">
+            <div class="why-icon">🔀</div>
+            <div class="why-text"><strong>Interchangeable Algorithms</strong><span>Swap algorithms at runtime without changing the client (Strategy).</span></div>
+          </div>
+          <div class="why-item">
+            <div class="why-icon">🎮</div>
+            <div class="why-text"><strong>State Management</strong><span>Let objects change behaviour when their internal state changes (State).</span></div>
+          </div>
+          <div class="why-item">
+            <div class="why-icon">↩️</div>
+            <div class="why-text"><strong>Undo / History</strong><span>Encapsulate actions as objects to support undo, queuing, and logging (Command, Memento).</span></div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:20px;">Patterns in this group:</h3>
+        <ul class="pattern-list">
+          <li>
+            <span class="p-name">Observer</span>
+            <span class="p-desc">Defines a <strong>one-to-many dependency</strong> so that when one object changes state, all its dependents are notified automatically. Used in event systems, UI frameworks, pub-sub.</span>
+          </li>
+          <li>
+            <span class="p-name">Strategy</span>
+            <span class="p-desc">Defines a <strong>family of algorithms</strong>, encapsulates each one, and makes them interchangeable. Swap sorting, payment, or discount logic at runtime without if-else chains.</span>
+          </li>
+          <li>
+            <span class="p-name">Command</span>
+            <span class="p-desc"><strong>Encapsulates a request as an object</strong>, allowing parameterisation, queuing, logging, and undoable operations. Think of a remote control — each button is a Command object.</span>
+          </li>
+          <li>
+            <span class="p-name">Iterator</span>
+            <span class="p-desc">Provides a way to <strong>sequentially access elements</strong> of a collection without exposing its underlying structure. Java's <code>for-each</code> uses this internally.</span>
+          </li>
+          <li>
+            <span class="p-name">State</span>
+            <span class="p-desc">Allows an object to <strong>alter its behaviour when its state changes</strong>. The object appears to change its class. Used in vending machines, traffic lights, order workflows.</span>
+          </li>
+          <li>
+            <span class="p-name">Template Method</span>
+            <span class="p-desc">Defines the <strong>skeleton of an algorithm in a base class</strong>, letting subclasses override specific steps without changing the overall structure.</span>
+          </li>
+          <li>
+            <span class="p-name">Chain of Resp.</span>
+            <span class="p-desc">Passes a request along a <strong>chain of handlers</strong> — each decides to process or pass it on. Used in middleware, filters, approval workflows.</span>
+          </li>
+          <li>
+            <span class="p-name">Mediator</span>
+            <span class="p-desc">Defines an object that <strong>encapsulates how a set of objects interact</strong>. Reduces chaotic dependencies — objects don't talk to each other directly, only through the mediator.</span>
+          </li>
+          <li>
+            <span class="p-name">Memento</span>
+            <span class="p-desc">Captures and externalizes an object's <strong>internal state so it can be restored later</strong> without violating encapsulation. The undo feature in text editors.</span>
+          </li>
+          <li>
+            <span class="p-name">Visitor</span>
+            <span class="p-desc">Lets you <strong>add new operations to existing objects</strong> without modifying them. Separates the algorithm from the object structure it operates on.</span>
+          </li>
+          <li>
+            <span class="p-name">Interpreter</span>
+            <span class="p-desc">Defines a <strong>grammar for a language and provides an interpreter</strong> to deal with that grammar. Used in SQL parsers, expression evaluators, scripting engines.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 06 COMPARISON TABLE ── -->
+  <div class="section">
+    <div class="section-label">06 — Side by Side</div>
+    <h2>📊 All Three Types Compared</h2>
+
+    <table>
+      <tr>
+        <th>Aspect</th>
+        <th class="cr">Creational 🏭</th>
+        <th class="st">Structural 🏗️</th>
+        <th class="bh">Behavioral 🔄</th>
+      </tr>
+      <tr>
+        <td><strong>Concern</strong></td>
+        <td>How objects are <em>created</em></td>
+        <td>How objects are <em>composed</em></td>
+        <td>How objects <em>communicate</em></td>
+      </tr>
+      <tr>
+        <td><strong>Core Question</strong></td>
+        <td>"Who creates and how?"</td>
+        <td>"How do parts fit together?"</td>
+        <td>"Who does what and when?"</td>
+      </tr>
+      <tr>
+        <td><strong>Problem Solved</strong></td>
+        <td>Rigid instantiation, <code>new</code> everywhere</td>
+        <td>Incompatible interfaces, complex hierarchies</td>
+        <td>Tight coupling between communicating objects</td>
+      </tr>
+      <tr>
+        <td><strong>Count (GoF)</strong></td>
+        <td><strong class="cr">5 patterns</strong></td>
+        <td><strong class="st">7 patterns</strong></td>
+        <td><strong class="bh">11 patterns</strong></td>
+      </tr>
+      <tr>
+        <td><strong>Real-world analogy</strong></td>
+        <td>Factory that manufactures products</td>
+        <td>Architect who designs building layout</td>
+        <td>Manager who coordinates team communication</td>
+      </tr>
+      <tr>
+        <td><strong>Common Java examples</strong></td>
+        <td><code>Calendar.getInstance()</code>, Spring Beans</td>
+        <td><code>Collections.unmodifiableList()</code>, Java I/O streams</td>
+        <td><code>Comparator</code>, Java <code>Iterator</code>, event listeners</td>
+      </tr>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 07 WHEN TO USE ── -->
+  <div class="section">
+    <div class="section-label">07 — Practical Guidance</div>
+    <h2>🎯 When to Pick Each Type</h2>
+
+    <div class="tip-card info">
+      <div class="tip-icon">🏭</div>
+      <div class="tip-content">
+        <strong>Reach for Creational when...</strong>
+        <p>You find yourself writing <code>new SomeClass()</code> in many places · You need only one instance of something (DB, config) · Object construction is complex with many optional parameters · You want to produce different variants of an object.</p>
+      </div>
+    </div>
+
+    <div class="tip-card warn">
+      <div class="tip-icon">🏗️</div>
+      <div class="tip-content">
+        <strong>Reach for Structural when...</strong>
+        <p>Two systems have incompatible interfaces and you can't change either · You want to add features to objects without subclassing · You want to simplify a complex API for a client · You need to control or wrap access to an object.</p>
+      </div>
+    </div>
+
+    <div class="tip-card success">
+      <div class="tip-icon">🔄</div>
+      <div class="tip-content">
+        <strong>Reach for Behavioral when...</strong>
+        <p>You have complex conditionals (if-else / switch) based on state or type · Objects need to be notified of changes in other objects · You want to swap algorithms at runtime · You need undo/redo, queuing, or request pipelines.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 08 CHEATSHEET ── -->
+  <div class="section">
+    <div class="section-label">08 — Summary</div>
+    <h2>📋 Quick Cheatsheet</h2>
+
+    <table>
+      <tr><th>Topic</th><th>Key Point</th></tr>
+      <tr><td><strong>What</strong></td><td>Reusable, proven templates for solving common OOP design problems</td></tr>
+      <tr><td><strong>Origin</strong></td><td>Gang of Four (GoF) book, 1994 — 23 patterns in 3 categories</td></tr>
+      <tr><td><strong>Creational (5)</strong></td><td>Singleton, Factory Method, Abstract Factory, Builder, Prototype</td></tr>
+      <tr><td><strong>Structural (7)</strong></td><td>Adapter, Bridge, Composite, Decorator, Facade, Flyweight, Proxy</td></tr>
+      <tr><td><strong>Behavioral (11)</strong></td><td>Observer, Strategy, Command, Iterator, State, Template Method, Chain of Resp., Mediator, Memento, Visitor, Interpreter</td></tr>
+      <tr><td><strong>Key benefit</strong></td><td>Common vocabulary + battle-tested solutions = faster, cleaner, maintainable code</td></tr>
+      <tr><td><strong>Warning</strong></td><td>Don't force patterns where they don't fit — over-engineering is a real trap</td></tr>
+    </table>
+
+    <div class="tip-card warn">
+      <div class="tip-icon">⚠️</div>
+      <div class="tip-content">
+        <strong>Golden Rule — Patterns are Tools, Not Goals</strong>
+        <p>Never start coding by asking "which pattern should I use?". Start by understanding the problem. Patterns emerge naturally when you recognise a known problem. Forcing a pattern into an unsuitable situation makes code harder — not easier — to understand.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  LLD Notes — Design Patterns Overview &nbsp;·&nbsp; Gang of Four &nbsp;·&nbsp; Java
+</div>
+
+</body>
+</html>
