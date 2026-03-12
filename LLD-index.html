@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLD Notes Hub — Java</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080c10;
+      --surface: #0e1420;
+      --surface2: #141c2c;
+      --border: #1c2840;
+      --accent: #f0a500;
+      --accent2: #00cfff;
+      --accent3: #ff4d6d;
+      --good: #10b981;
+      --text: #dde4f0;
+      --muted: #526080;
+      --grid: rgba(255, 255, 255, 0.015);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .blob-1 {
+      width: 500px;
+      height: 500px;
+      background: rgba(240, 165, 0, 0.05);
+      top: -100px;
+      right: -100px;
+    }
+
+    .blob-2 {
+      width: 400px;
+      height: 400px;
+      background: rgba(0, 207, 255, 0.04);
+      bottom: 0;
+      left: -80px;
+    }
+
+    /* HEADER */
+    header {
+      position: relative;
+      z-index: 10;
+      padding: 52px 48px 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .logo-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-eyebrow::before {
+      content: '';
+      width: 24px;
+      height: 2px;
+      background: var(--accent);
+      display: inline-block;
+    }
+
+    .logo-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(48px, 7vw, 80px);
+      line-height: 0.95;
+      letter-spacing: 2px;
+      color: #fff;
+    }
+
+    .logo-title span {
+      color: var(--accent);
+    }
+
+    .logo-sub {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 10px;
+      font-weight: 300;
+    }
+
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 16px;
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 24px;
+      align-items: flex-end;
+    }
+
+    .stat {
+      text-align: right;
+    }
+
+    .stat-num {
+      font-family: 'Bebas Neue', monospace;
+      font-size: 36px;
+      line-height: 1;
+      color: #fff;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* LOCK BUTTON */
+    .lock-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+    }
+
+    .lock-btn.unlocked {
+      border-color: rgba(16, 185, 129, 0.4);
+      color: var(--good);
+      background: rgba(16, 185, 129, 0.07);
+    }
+
+    .lock-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(240, 165, 0, 0.07);
+    }
+
+    .lock-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.2s;
+    }
+
+    .lock-btn.unlocked .lock-dot {
+      background: var(--good);
+      box-shadow: 0 0 6px var(--good);
+    }
+
+    /* MAIN */
+    main {
+      position: relative;
+      z-index: 10;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 48px 32px 80px;
+    }
+
+    /* PASSWORD MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 40px;
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+      overflow: hidden;
+      animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    @keyframes popIn {
+      from {
+        transform: scale(0.88);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .modal-icon {
+      font-size: 36px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .modal h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 2px;
+      text-align: center;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .modal p {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .modal-field {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .modal-field input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 44px 12px 14px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      letter-spacing: 3px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .modal-field input::placeholder {
+      letter-spacing: 1px;
+      font-size: 13px;
+      color: #2e3f5a;
+    }
+
+    .modal-field input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(240, 165, 0, 0.1);
+    }
+
+    .modal-field input.shake-err {
+      animation: shakeAnim 0.35s ease;
+      border-color: var(--accent3);
+      box-shadow: 0 0 0 3px rgba(255, 77, 109, 0.12);
+    }
+
+    @keyframes shakeAnim {
+
+      0%,
+      100% {
+        transform: translateX(0)
+      }
+
+      20% {
+        transform: translateX(-6px)
+      }
+
+      40% {
+        transform: translateX(6px)
+      }
+
+      60% {
+        transform: translateX(-4px)
+      }
+
+      80% {
+        transform: translateX(4px)
+      }
+    }
+
+    .eye-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 4px;
+      display: flex;
+      transition: color 0.15s;
+    }
+
+    .eye-btn:hover {
+      color: var(--accent);
+    }
+
+    .modal-error {
+      font-size: 12px;
+      color: var(--accent3);
+      font-family: 'JetBrains Mono', monospace;
+      text-align: center;
+      margin-bottom: 14px;
+      min-height: 18px;
+    }
+
+    .modal-submit {
+      width: 100%;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 13px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    }
+
+    .modal-submit:hover {
+      background: #ffc027;
+      box-shadow: 0 0 24px rgba(240, 165, 0, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .modal-cancel {
+      display: block;
+      text-align: center;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      transition: color 0.15s;
+    }
+
+    .modal-cancel:hover {
+      color: var(--accent3);
+    }
+
+    /* ADD SECTION */
+    .add-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 32px;
+      margin-bottom: 44px;
+      position: relative;
+      overflow: hidden;
+      transition: opacity 0.3s, filter 0.3s;
+    }
+
+    .add-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    .add-section.locked {
+      opacity: 0.35;
+      filter: blur(1.5px);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .add-section h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 20px;
+    }
+
+    .url-input-wrap {
+      display: flex;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .url-input-wrap:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(240, 165, 0, 0.1);
+    }
+
+    .url-base-prefix {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--accent2);
+      background: rgba(0, 207, 255, 0.07);
+      border-right: 1px solid var(--border);
+      padding: 11px 12px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0.3px;
+    }
+
+    .url-input-wrap input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      min-width: 0;
+    }
+
+    .url-input-wrap input::placeholder {
+      color: #2e3f5a;
+    }
+
+    .url-preview {
+      margin-top: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 0 2px;
+      min-height: 16px;
+      transition: color 0.15s;
+    }
+
+    .url-preview.has-val {
+      color: rgba(0, 207, 255, 0.6);
+    }
+
+    .url-preview .preview-label {
+      color: var(--muted);
+      margin-right: 6px;
+    }
+
+    .locked-hint {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 18px;
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      margin-bottom: 44px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .locked-hint:hover {
+      border-color: var(--accent);
+      background: rgba(240, 165, 0, 0.03);
+    }
+
+    .locked-hint span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .locked-hint.visible {
+      display: flex;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 2fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    @media(max-width:600px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .field input::placeholder {
+      color: #2e3f5a;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(240, 165, 0, 0.1);
+    }
+
+    .field select option {
+      background: #111827;
+    }
+
+    .add-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 11px 24px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      white-space: nowrap;
+    }
+
+    .add-btn:hover {
+      background: #ffc027;
+      box-shadow: 0 0 20px rgba(240, 165, 0, 0.3);
+      transform: translateY(-1px);
+    }
+
+    /* FILTER BAR */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .filter-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(240, 165, 0, 0.07);
+    }
+
+    /* CARDS */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .note-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px 22px 18px;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      animation: fadeUp 0.3s ease both;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .note-card:hover {
+      border-color: rgba(240, 165, 0, 0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .card-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .badge-solid {
+      background: rgba(240, 165, 0, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(240, 165, 0, 0.25);
+    }
+
+    .badge-pattern {
+      background: rgba(0, 207, 255, 0.1);
+      color: var(--accent2);
+      border: 1px solid rgba(0, 207, 255, 0.22);
+    }
+
+    .badge-concept {
+      background: rgba(124, 58, 237, 0.12);
+      color: #a78bfa;
+      border: 1px solid rgba(124, 58, 237, 0.25);
+    }
+
+    .badge-other {
+      background: rgba(255, 77, 109, 0.1);
+      color: var(--accent3);
+      border: 1px solid rgba(255, 77, 109, 0.2);
+    }
+
+    .card-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      color: var(--border);
+      line-height: 1;
+      cursor: default;
+      transition: color 0.15s;
+    }
+
+    body.admin-unlocked .card-num {
+      cursor: pointer;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    body.admin-unlocked .card-num:hover {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .card-num-input {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      color: var(--accent);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--accent);
+      outline: none;
+      width: 52px;
+      text-align: right;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .card-num-input::-webkit-inner-spin-button,
+    .card-num-input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+    }
+
+    .card-num-edit-hint {
+      visibility: hidden;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+      text-align: right;
+    }
+
+    body.admin-unlocked .card-num:hover+.card-num-edit-hint,
+    .card-num-edit-hint.show {
+      display: block;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f0f4ff;
+      line-height: 1.3;
+    }
+
+    .card-link {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      text-decoration: none;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      transition: all 0.15s;
+    }
+
+    .card-link:hover {
+      color: var(--accent2);
+      border-color: rgba(0, 207, 255, 0.3);
+      background: rgba(0, 207, 255, 0.05);
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .card-date {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+
+    .icon-btn.del:hover {
+      border-color: var(--accent3);
+      color: var(--accent3);
+      background: rgba(255, 77, 109, 0.08);
+    }
+
+    .icon-btn.open:hover {
+      border-color: var(--accent2);
+      color: var(--accent2);
+      background: rgba(0, 207, 255, 0.08);
+    }
+
+    /* Delete button only visible when admin unlocked */
+    .del-btn-wrap {
+      display: none;
+    }
+
+    body.admin-unlocked .del-btn-wrap {
+      display: contents;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .empty-state p {
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .empty-state strong {
+      color: var(--accent);
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--surface);
+      border: 1px solid #1c2840;
+      border-left: 4px solid var(--good);
+      color: #f0f4ff;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'Outfit', sans-serif;
+      z-index: 2000;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      animation: slideIn 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toast.warn {
+      border-left-color: var(--accent3);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(40px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* CATEGORY DIVIDER (All view) */
+    .cat-divider {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 10px 0 4px;
+    }
+
+    .cat-divider:first-child {
+      margin-top: 0;
+    }
+
+    .cat-divider-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .cat-divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <!-- PASSWORD MODAL -->
+  <div class="modal-overlay hidden" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-icon">🔐</div>
+      <h3>Admin Access</h3>
+      <p>Enter your password to unlock<br>Add &amp; Delete controls.</p>
+      <div class="modal-field">
+        <input type="password" id="pwdInput" placeholder="Enter password" autocomplete="off" />
+        <button class="eye-btn" onclick="toggleEye()" title="Show / Hide">
+          <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-error" id="modalError"></div>
+      <button class="modal-submit" onclick="submitPassword()">Unlock →</button>
+      <span class="modal-cancel" onclick="closeModal()">Cancel</span>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-area">
+      <div class="logo-eyebrow">Low Level Design · Java</div>
+      <div class="logo-title">LLD<span>.</span>NOTES</div>
+      <p class="logo-sub">Your personal index of Low Level Design study notes</p>
+    </div>
+    <div class="header-right">
+      <button class="lock-btn" id="lockBtn" onclick="handleLockBtn()">
+        <div class="lock-dot" id="lockDot"></div>
+        <span id="lockBtnText">🔒 Admin Login</span>
+      </button>
+      <div class="header-stats">
+        <div class="stat">
+          <div class="stat-num" id="totalCount">0</div>
+          <div class="stat-label">Notes</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="topicCount">0</div>
+          <div class="stat-label">Topics</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Locked hint -->
+    <div class="locked-hint visible" id="lockedHint" onclick="openModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#526080" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2" />
+        <path d="M7 11V7a5 5 0 0110 0v4" />
+      </svg>
+      <span>🔒 Admin locked — click here to login and manage notes</span>
+    </div>
+
+    <!-- Add Note Form -->
+    <div class="add-section locked" id="addSection">
+      <h2>＋ Add New Note</h2>
+      <div class="form-row">
+        <div class="field">
+          <label>Category</label>
+          <select id="categoryInput">
+            <option value="solid">SOLID</option>
+            <option value="pattern">Design Pattern</option>
+            <option value="concept">Concept</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Note Title</label>
+          <input type="text" id="titleInput" placeholder="e.g. Interface Segregation Principle" />
+        </div>
+        <button class="add-btn" onclick="addNote()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add Note
+        </button>
+      </div>
+      <div class="form-row" style="margin-top:12px;">
+        <div class="field" style="grid-column: 1 / -1;">
+          <label>Page Path</label>
+          <div class="url-input-wrap">
+            <span class="url-base-prefix" id="urlBasePrefix"></span>
+            <input type="text" id="hrefInput" placeholder="/notes/isp.html" autocomplete="off" />
+          </div>
+          <div class="url-preview" id="urlPreview"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <span class="filter-label">Filter:</span>
+      <button class="filter-btn active" onclick="filterCards('all', this)">All</button>
+      <button class="filter-btn" onclick="filterCards('solid', this)">SOLID</button>
+      <button class="filter-btn" onclick="filterCards('pattern', this)">Patterns</button>
+      <button class="filter-btn" onclick="filterCards('concept', this)">Concepts</button>
+      <button class="filter-btn" onclick="filterCards('other', this)">Other</button>
+    </div>
+
+    <!-- Cards -->
+    <div class="cards-grid" id="cardsGrid"></div>
+  </main>
+
+  <script>
+    // ══════════════════════════════════════════════════════
+    //  🔐 PASTE YOUR SHA-256 HASH HERE
+    //
+    //  Steps:
+    //  1. Go to: https://emn178.github.io/online-tools/sha256.html
+    //  2. Type your password → copy the 64-char hash
+    //  3. Paste it below — your plain password NEVER appears here
+    //
+    //  Example (do NOT use this):
+    //  '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'
+    //  (that is the hash of the word: password)
+    // ══════════════════════════════════════════════════════
+    const ADMIN_HASH = 'e7f024047bb55d390defb20386a7a99c3df7515595782aa22d80686cc35b2f95';
+
+    // ══════════════════════════════════════════════════════
+    //  🌐 BASE URL CONFIG
+    //  Set your server base URL here (no trailing slash).
+    //  Admin will type only the path, e.g.  /notes/isp.html
+    //  Final link = BASE_URL + path
+    //
+    //  Examples:
+    //    'https://mysite.com'
+    //    'https://username.github.io/lld-notes'
+    //    ''   ← leave empty to use full URLs manually
+    // ══════════════════════════════════════════════════════
+    const BASE_URL = 'https://your-server.com';
+
+    // SHA-256 via Web Crypto API (runs in browser, nothing sent to any server)
+    async function sha256(str) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Session state — clears on tab/window close
+    let isUnlocked = false;
+
+    // ── MODAL ──
+    function openModal() {
+      document.getElementById('modalOverlay').classList.remove('hidden');
+      document.getElementById('pwdInput').value = '';
+      document.getElementById('modalError').textContent = '';
+      document.getElementById('pwdInput').classList.remove('shake-err');
+      setTimeout(() => document.getElementById('pwdInput').focus(), 60);
+    }
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.add('hidden');
+    }
+    function toggleEye() {
+      const inp = document.getElementById('pwdInput');
+      const icon = document.getElementById('eyeIcon');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`;
+      } else {
+        inp.type = 'password';
+        icon.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+      }
+    }
+    async function submitPassword() {
+      const val = document.getElementById('pwdInput').value;
+      if (!val) return;
+      const hash = await sha256(val);
+      if (hash === ADMIN_HASH) {
+        isUnlocked = true;
+        closeModal();
+        applyUnlocked();
+        toast('🔓 Welcome back! Admin mode on.');
+      } else {
+        const inp = document.getElementById('pwdInput');
+        inp.classList.add('shake-err');
+        document.getElementById('modalError').textContent = '✗ Incorrect password.';
+        setTimeout(() => { inp.classList.remove('shake-err'); }, 500);
+        inp.value = '';
+        inp.focus();
+      }
+    }
+    function handleLockBtn() {
+      if (isUnlocked) { isUnlocked = false; applyLocked(); toast('🔒 Admin mode off.', true); }
+      else { openModal(); }
+    }
+
+    // ── UNLOCK / LOCK UI ──
+    function applyUnlocked() {
+      document.body.classList.add('admin-unlocked');
+      document.getElementById('addSection').classList.remove('locked');
+      document.getElementById('lockedHint').classList.remove('visible');
+      const btn = document.getElementById('lockBtn');
+      btn.classList.add('unlocked');
+      document.getElementById('lockBtnText').textContent = '🔓 Logout';
+      renderCards(currentFilter);
+    }
+    function applyLocked() {
+      document.body.classList.remove('admin-unlocked');
+      document.getElementById('addSection').classList.add('locked');
+      document.getElementById('lockedHint').classList.add('visible');
+      const btn = document.getElementById('lockBtn');
+      btn.classList.remove('unlocked');
+      document.getElementById('lockBtnText').textContent = '🔒 Admin Login';
+      renderCards(currentFilter);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+      const modalHidden = document.getElementById('modalOverlay').classList.contains('hidden');
+      if (!modalHidden && e.key === 'Enter') submitPassword();
+      if (!modalHidden && e.key === 'Escape') closeModal();
+    });
+
+    // ── NOTES DATA ──
+    const BADGE_MAP = {
+      solid: { label: 'SOLID', cls: 'badge-solid' },
+      pattern: { label: 'Design Pattern', cls: 'badge-pattern' },
+      concept: { label: 'Concept', cls: 'badge-concept' },
+      other: { label: 'Other', cls: 'badge-other' },
+    };
+
+    let notes = JSON.parse(localStorage.getItem('lld_notes') || '[]');
+    if (notes.length === 0) {
+      notes = [{ id: Date.now(), title: 'Interface Segregation Principle', href: './ISP-notes.html', category: 'solid', pageNum: 1, date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) }];
+      saveNotes();
+    }
+
+    function saveNotes() { localStorage.setItem('lld_notes', JSON.stringify(notes)); }
+
+    function addNote() {
+      if (!isUnlocked) return;
+      const title = document.getElementById('titleInput').value.trim();
+      const path = document.getElementById('hrefInput').value.trim();
+      const cat = document.getElementById('categoryInput').value;
+      if (!title) { shakeField('titleInput'); return; }
+      if (!path) { shakeField('hrefInput'); return; }
+
+      // Combine base URL + path. If path is already a full URL (http/https), use as-is.
+      const href = /^https?:\/\//i.test(path)
+        ? path
+        : BASE_URL.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
+
+      notes.push({ id: Date.now(), title, href, category: cat, pageNum: notes.length + 1, date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) });
+      saveNotes(); renderCards(currentFilter); updateStats();
+      toast('✅ Added: ' + title);
+      document.getElementById('titleInput').value = '';
+      document.getElementById('hrefInput').value = '';
+    }
+
+    function deleteNote(id) {
+      if (!isUnlocked) return;
+      notes = notes.filter(n => n.id !== id);
+      saveNotes(); renderCards(currentFilter); updateStats();
+      toast('🗑️ Note removed.', true);
+    }
+
+    let currentFilter = 'all';
+    function filterCards(cat, btn) {
+      currentFilter = cat;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderCards(cat);
+    }
+
+    // Category display order for "All" view
+    const CAT_ORDER = ['solid', 'pattern', 'concept', 'other'];
+
+    function sortNotes(list, filter) {
+      if (filter === 'all') {
+        // Group by category in defined order, within each group sort by pageNum ascending
+        return [...list].sort((a, b) => {
+          const catA = CAT_ORDER.indexOf(a.category);
+          const catB = CAT_ORDER.indexOf(b.category);
+          if (catA !== catB) return catA - catB;
+          return (a.pageNum ?? 9999) - (b.pageNum ?? 9999);
+        });
+      }
+      // Specific filter: sort purely by pageNum ascending
+      return [...list].sort((a, b) => (a.pageNum ?? 9999) - (b.pageNum ?? 9999));
+    }
+
+    function renderCards(filter) {
+      const grid = document.getElementById('cardsGrid');
+      const base = filter === 'all' ? notes : notes.filter(n => n.category === filter);
+      const filtered = sortNotes(base, filter);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📂</div><p>No notes here yet.<br><strong>Login as admin</strong> and add one above.</p></div>`;
+        return;
+      }
+
+      let html = '';
+      let lastCat = null;
+
+      filtered.forEach((note, i) => {
+        const b = BADGE_MAP[note.category] || BADGE_MAP.other;
+        const short = note.href.length > 36 ? '…' + note.href.slice(-32) : note.href;
+        const num = note.pageNum != null ? String(note.pageNum).padStart(2, '0') : String(i + 1).padStart(2, '0');
+
+        // Insert category divider in "All" view when category changes
+        if (filter === 'all' && note.category !== lastCat) {
+          lastCat = note.category;
+          html += `<div class="cat-divider"><span class="cat-divider-badge ${b.cls}">${b.label}</span><div class="cat-divider-line"></div></div>`;
+        }
+
+        html += `
+      <div class="note-card" style="animation-delay:${i * 0.04}s">
+        <div class="card-top">
+          <span class="card-badge ${b.cls}">${b.label}</span>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+            <span class="card-num" id="num-${note.id}" title="${isUnlocked ? 'Click to edit page number' : ''}" onclick="editPageNum(${note.id})">${num}</span>
+            <span class="card-num-edit-hint" id="hint-${note.id}">${isUnlocked ? 'edit' : ''}</span>
+          </div>
+        </div>
+        <div class="card-title">${esc(note.title)}</div>
+        <a class="card-link" href="${esc(note.href)}" target="_blank" title="${esc(note.href)}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+          </svg>
+          ${esc(short)}
+        </a>
+        <div class="card-footer">
+          <span class="card-date">${note.date}</span>
+          <div class="card-actions">
+            <button class="icon-btn open" title="Open" onclick="window.open('${esc(note.href)}','_blank')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </button>
+            <span class="del-btn-wrap">
+              <button class="icon-btn del" title="Delete" onclick="deleteNote(${note.id})">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                  <path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+                </svg>
+              </button>
+            </span>
+          </div>
+        </div>
+      </div>`;
+      });
+
+      grid.innerHTML = html;
+    }
+
+    function updateStats() {
+      document.getElementById('totalCount').textContent = notes.length;
+      document.getElementById('topicCount').textContent = new Set(notes.map(n => n.category)).size;
+    }
+
+    function esc(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function shakeField(id) {
+      const el = document.getElementById(id);
+      el.style.borderColor = '#ef4444';
+      el.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.15)';
+      setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 1200);
+    }
+
+    function toast(msg, warn = false) {
+      const t = document.createElement('div');
+      t.className = 'toast' + (warn ? ' warn' : '');
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    // ── EDIT PAGE NUMBER ──
+    function editPageNum(id) {
+      if (!isUnlocked) return;
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
+
+      const span = document.getElementById('num-' + id);
+      const hint = document.getElementById('hint-' + id);
+      if (!span || span.querySelector('input')) return; // already editing
+
+      const current = note.pageNum != null ? note.pageNum : '';
+
+      span.innerHTML = `<input
+    class="card-num-input"
+    id="input-${id}"
+    type="number"
+    min="1"
+    value="${current}"
+    placeholder="##"
+    onclick="event.stopPropagation()"
+  />`;
+      hint.textContent = 'enter ↵ to save';
+      hint.classList.add('show');
+
+      const inp = document.getElementById('input-' + id);
+      inp.focus();
+      inp.select();
+
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); savePageNum(id); }
+        if (e.key === 'Escape') { renderCards(currentFilter); }
+      });
+      inp.addEventListener('blur', () => {
+        setTimeout(() => savePageNum(id), 120);
+      });
+    }
+
+    function savePageNum(id) {
+      const inp = document.getElementById('input-' + id);
+      if (!inp) return;
+      const val = parseInt(inp.value, 10);
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
+
+      if (!isNaN(val) && val > 0) {
+        note.pageNum = val;
+        saveNotes();
+        toast('✏️ Page number updated to ' + String(val).padStart(2, '0'));
+      }
+      renderCards(currentFilter);
+    }
+
+    // ── URL PREFIX INIT & LIVE PREVIEW ──
+    function initUrlPrefix() {
+      const prefix = document.getElementById('urlBasePrefix');
+      if (prefix) prefix.textContent = BASE_URL.replace(/\/$/, '') + '/';
+
+      const inp = document.getElementById('hrefInput');
+      const preview = document.getElementById('urlPreview');
+      if (!inp || !preview) return;
+
+      inp.addEventListener('input', () => {
+        const path = inp.value.trim();
+        if (!path) {
+          preview.textContent = '';
+          preview.classList.remove('has-val');
+          return;
+        }
+        const full = /^https?:\/\//i.test(path)
+          ? path
+          : BASE_URL.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
+        preview.innerHTML = `<span class="preview-label">→ full url:</span>${full}`;
+        preview.classList.add('has-val');
+      });
+    }
+
+
+    ['titleInput', 'hrefInput'].forEach(id => {
+      document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') addNote(); });
+    });
+
+    // Init — always start locked
+    applyLocked();
+    renderCards('all');
+    updateStats();
+    initUrlPrefix();
+  </script>
+</body>
+
+</html>
