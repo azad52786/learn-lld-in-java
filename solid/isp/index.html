@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interface Segregation Principle — LLD Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1f2d45;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --good: #10b981;
+    --bad: #ef4444;
+    --warn: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --code-bg: #0d1117;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #0a0e17 0%, #0f1729 40%, #120d24 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 40px 50px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,212,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 30%;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .solid-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.25);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .solid-badge span { font-size: 16px; }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5vw, 54px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 560px;
+    margin-bottom: 28px;
+  }
+
+  .hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Layout */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 32px;
+  }
+
+  /* Section titles */
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 20px;
+  }
+  h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+  }
+
+  /* Definition box */
+  .definition-box {
+    background: linear-gradient(135deg, rgba(0,212,255,0.05), rgba(124,58,237,0.05));
+    border: 1px solid rgba(0,212,255,0.2);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin: 24px 0;
+    position: relative;
+  }
+  .definition-box .quote-icon {
+    font-size: 48px;
+    color: rgba(0,212,255,0.1);
+    font-family: Georgia, serif;
+    position: absolute;
+    top: 8px; right: 16px;
+    line-height: 1;
+  }
+  .definition-box p {
+    font-size: 16px;
+    color: #cbd5e1;
+    font-style: italic;
+    line-height: 1.8;
+  }
+  .definition-box strong { color: var(--accent); font-style: normal; }
+
+  /* Simple explanation */
+  .simple-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 26px;
+    margin: 20px 0;
+  }
+  .simple-box .emoji-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent2);
+    margin-bottom: 10px;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.5px;
+  }
+
+  /* Code blocks */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+  }
+  .code-header .lang {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .code-header .filename {
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .code-body {
+    padding: 20px 22px;
+    overflow-x: auto;
+    line-height: 1.8;
+  }
+  .code-body pre { white-space: pre; }
+
+  /* Syntax colors */
+  .kw { color: #ff79c6; }
+  .cls { color: #8be9fd; }
+  .fn { color: #50fa7b; }
+  .str { color: #f1fa8c; }
+  .cmt { color: #6272a4; font-style: italic; }
+  .ann { color: #ffb86c; }
+  .type { color: #bd93f9; }
+  .iface { color: #00d4ff; }
+  .num { color: #ff6b35; }
+
+  /* Good / Bad panels */
+  .panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  @media(max-width: 640px) { .panel-grid { grid-template-columns: 1fr; } }
+
+  .panel {
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 12px 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel.bad .panel-header { background: rgba(239,68,68,0.15); color: var(--bad); border-bottom: 1px solid rgba(239,68,68,0.2); }
+  .panel.good .panel-header { background: rgba(16,185,129,0.12); color: var(--good); border-bottom: 1px solid rgba(16,185,129,0.2); }
+  .panel.bad { border: 1px solid rgba(239,68,68,0.2); }
+  .panel.good { border: 1px solid rgba(16,185,129,0.2); }
+  .panel .code-block { margin: 0; border: none; border-radius: 0; }
+  .panel .code-header { border-radius: 0; }
+
+  /* Warning / tip cards */
+  .tip-card {
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 16px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .tip-card.warn { background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.25); }
+  .tip-card.danger { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.25); }
+  .tip-card.success { background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.25); }
+  .tip-card.info { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2); }
+  .tip-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+  .tip-content strong { display: block; font-family: 'Syne', sans-serif; font-size: 14px; margin-bottom: 5px; }
+  .tip-card.warn .tip-content strong { color: var(--warn); }
+  .tip-card.danger .tip-content strong { color: var(--bad); }
+  .tip-card.success .tip-content strong { color: var(--good); }
+  .tip-card.info .tip-content strong { color: var(--accent); }
+  .tip-content p { font-size: 14px; color: #94a3b8; }
+
+  /* Section divider */
+  .section {
+    margin-bottom: 56px;
+  }
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 48px 0;
+  }
+
+  /* Summary table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  td {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    color: #94a3b8;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  td strong { color: #e2e8f0; }
+  td .good-text { color: var(--good); font-size: 12px; }
+  td .bad-text { color: var(--bad); font-size: 12px; }
+
+  /* Bad habits list */
+  .habit-list {
+    list-style: none;
+    margin: 16px 0;
+  }
+  .habit-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+  }
+  .habit-list li:hover { border-color: rgba(239,68,68,0.4); }
+  .habit-icon { font-size: 18px; flex-shrink: 0; }
+  .habit-text strong { display: block; font-size: 14px; color: #f1f5f9; font-family: 'Syne', sans-serif; margin-bottom: 3px; }
+  .habit-text span { font-size: 13px; color: var(--muted); }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Inline code */
+  code {
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  .arrow-flow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .flow-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #cbd5e1;
+  }
+  .flow-arrow { color: var(--accent); font-size: 18px; }
+
+  .highlight-line {
+    background: rgba(0,212,255,0.05);
+    border-left: 3px solid var(--accent);
+    padding: 2px 8px;
+    margin: 2px -8px;
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="solid-badge"><span>🧱</span> SOLID Principles — LLD with Java</div>
+  <h1>Interface<br><em>Segregation</em><br>Principle</h1>
+  <p class="hero-sub">The "I" in SOLID. Learn why bloated interfaces are a design smell — and how to slice them right.</p>
+  <div class="hero-tags">
+    <span class="tag">Java</span>
+    <span class="tag">LLD</span>
+    <span class="tag">SOLID</span>
+    <span class="tag">Design Patterns</span>
+    <span class="tag">Clean Code</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- WHAT IS ISP -->
+  <div class="section">
+    <div class="section-label">01 — Definition</div>
+    <h2>What is ISP?</h2>
+
+    <div class="definition-box">
+      <div class="quote-icon">"</div>
+      <p>"A client should <strong>not be forced to implement interfaces</strong> it does not use. No code should be forced to depend on methods it does not call."</p>
+      <p style="margin-top:10px; font-size:13px; color: #475569; font-style:normal;">— Robert C. Martin (Uncle Bob)</p>
+    </div>
+
+    <div class="simple-box">
+      <div class="emoji-title">🧠 In Plain English</div>
+      <p>If you have a big fat interface with 10 methods, and a class only needs 3 of them — <strong>that's a problem</strong>. The class is forced to implement 7 useless methods. ISP says: <em>break that big interface into smaller, focused ones.</em></p>
+    </div>
+
+    <div class="arrow-flow">
+      <div class="flow-box">🏋️ Fat Interface</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Class forced to implement junk</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="color:var(--bad);">Tight Coupling + Bugs</div>
+    </div>
+    <div class="arrow-flow">
+      <div class="flow-box">✂️ Segregated Interfaces</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Implement only what you need</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="color:var(--good);">Clean + Flexible Design</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- WHY USE ISP -->
+  <div class="section">
+    <div class="section-label">02 — Why It Matters</div>
+    <h2>Why Should You Use ISP?</h2>
+
+    <table>
+      <tr>
+        <th>Without ISP</th>
+        <th>With ISP</th>
+      </tr>
+      <tr>
+        <td>Classes implement dummy/empty methods just to satisfy an interface</td>
+        <td>Every method in the interface is relevant to the implementor</td>
+      </tr>
+      <tr>
+        <td>Changing one method forces recompilation of unrelated classes</td>
+        <td>Changes are isolated — only affected classes need updates</td>
+      </tr>
+      <tr>
+        <td>Hard to read: "Why is a <code>Robot</code> implementing <code>eat()</code>?"</td>
+        <td>Clear intent: every class does exactly what it promises</td>
+      </tr>
+      <tr>
+        <td>Testing becomes messy with many unused stubs</td>
+        <td>Mocking is focused and clean in unit tests</td>
+      </tr>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- BAD EXAMPLE -->
+  <div class="section">
+    <div class="section-label">03 — Bad Example (Violating ISP)</div>
+    <h2>❌ The Problem: Fat Interface</h2>
+
+    <p style="margin-bottom:18px; color:#94a3b8;">Imagine you're building a system with different types of workers: <strong>Human workers</strong> and <strong>Robot workers</strong>. You create one big interface for all of them.</p>
+
+    <div class="panel bad">
+      <div class="panel-header">⚠️ BAD — Violates ISP</div>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">Worker.java</span>
+        </div>
+        <div class="code-body"><pre><span class="cmt">// ❌ One fat interface — forces ALL workers to implement eat()</span>
+<span class="kw">public interface</span> <span class="iface">Worker</span> {
+    <span class="type">void</span> <span class="fn">work</span>();
+    <span class="type">void</span> <span class="fn">eat</span>();      <span class="cmt">// 🤔 What does a Robot do with this??</span>
+    <span class="type">void</span> <span class="fn">sleep</span>();     <span class="cmt">// 🤔 Robots don't sleep either!</span>
+}</pre></div>
+      </div>
+    </div>
+
+    <div class="panel bad">
+      <div class="panel-header">⚠️ BAD — Robot forced to implement human behaviors</div>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">Robot.java</span>
+        </div>
+        <div class="code-body"><pre><span class="kw">public class</span> <span class="cls">Robot</span> <span class="kw">implements</span> <span class="iface">Worker</span> {
+
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">work</span>() {
+        System.out.println(<span class="str">"Robot is working..."</span>);
+    }
+
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">eat</span>() {
+        <span class="cmt">// ❌ FORCED to implement this — makes NO sense!</span>
+        <span class="kw">throw new</span> <span class="cls">UnsupportedOperationException</span>(<span class="str">"Robots don't eat!"</span>);
+    }
+
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">sleep</span>() {
+        <span class="cmt">// ❌ Again — forced junk method!</span>
+        <span class="kw">throw new</span> <span class="cls">UnsupportedOperationException</span>(<span class="str">"Robots don't sleep!"</span>);
+    }
+}</pre></div>
+      </div>
+    </div>
+
+    <div class="tip-card danger">
+      <div class="tip-icon">🚨</div>
+      <div class="tip-content">
+        <strong>Why This is Dangerous</strong>
+        <p>Throwing <code>UnsupportedOperationException</code> at runtime is a design smell. It means the interface contract is broken. Any code calling <code>worker.eat()</code> on a Robot will <strong>crash at runtime</strong>, not compile time.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- GOOD EXAMPLE -->
+  <div class="section">
+    <div class="section-label">04 — Good Example (Following ISP)</div>
+    <h2>✅ The Fix: Segregated Interfaces</h2>
+
+    <p style="margin-bottom:18px; color:#94a3b8;">Split the fat interface into focused, role-specific interfaces. Each class implements only what it needs.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="lang">Java</span>
+        <span class="filename">Interfaces — Workable.java / Eatable.java / Sleepable.java</span>
+      </div>
+      <div class="code-body"><pre><span class="cmt">// ✅ Small, focused interfaces — each does ONE thing</span>
+
+<span class="kw">public interface</span> <span class="iface">Workable</span> {
+    <span class="type">void</span> <span class="fn">work</span>();
+}
+
+<span class="kw">public interface</span> <span class="iface">Eatable</span> {
+    <span class="type">void</span> <span class="fn">eat</span>();
+}
+
+<span class="kw">public interface</span> <span class="iface">Sleepable</span> {
+    <span class="type">void</span> <span class="fn">sleep</span>();
+}</pre></div>
+    </div>
+
+    <div class="panel-grid">
+      <div class="panel good">
+        <div class="panel-header">✅ HumanWorker — implements all 3</div>
+        <div class="code-block">
+          <div class="code-header"><span class="lang">Java</span><span class="filename">HumanWorker.java</span></div>
+          <div class="code-body"><pre><span class="kw">public class</span> <span class="cls">HumanWorker</span>
+    <span class="kw">implements</span> <span class="iface">Workable</span>, <span class="iface">Eatable</span>, <span class="iface">Sleepable</span> {
+
+  <span class="ann">@Override</span>
+  <span class="kw">public void</span> <span class="fn">work</span>() {
+    System.out.println(<span class="str">"Human working"</span>);
+  }
+
+  <span class="ann">@Override</span>
+  <span class="kw">public void</span> <span class="fn">eat</span>() {
+    System.out.println(<span class="str">"Human eating"</span>);
+  }
+
+  <span class="ann">@Override</span>
+  <span class="kw">public void</span> <span class="fn">sleep</span>() {
+    System.out.println(<span class="str">"Human sleeping"</span>);
+  }
+}</pre></div>
+        </div>
+      </div>
+
+      <div class="panel good">
+        <div class="panel-header">✅ Robot — implements only Workable</div>
+        <div class="code-block">
+          <div class="code-header"><span class="lang">Java</span><span class="filename">Robot.java</span></div>
+          <div class="code-body"><pre><span class="cmt">// ✅ Robot ONLY implements what it needs!</span>
+<span class="kw">public class</span> <span class="cls">Robot</span>
+    <span class="kw">implements</span> <span class="iface">Workable</span> {
+
+  <span class="ann">@Override</span>
+  <span class="kw">public void</span> <span class="fn">work</span>() {
+    System.out.println(<span class="str">"Robot working 24/7"</span>);
+  }
+
+  <span class="cmt">// No eat(), no sleep() — clean!</span>
+}</pre></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-card success">
+      <div class="tip-icon">✅</div>
+      <div class="tip-content">
+        <strong>Result: Zero Wasted Methods</strong>
+        <p>Now <code>Robot</code> only has <code>work()</code>. <code>HumanWorker</code> has all three. No forced implementations, no runtime exceptions, no design lies.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- REAL WORLD EXAMPLE -->
+  <div class="section">
+    <div class="section-label">05 — Real World Example</div>
+    <h2>🖨️ Printer Example (Closer to Real Code)</h2>
+
+    <p style="margin-bottom:18px; color:#94a3b8;">A classic ISP example: not all printers can scan, fax, or print in color. Don't lump them all in one interface.</p>
+
+    <div class="panel bad">
+      <div class="panel-header">⚠️ BAD — Everything in one interface</div>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">Java</span><span class="filename">MultiFunctionDevice.java</span></div>
+        <div class="code-body"><pre><span class="cmt">// ❌ A basic printer doesn't fax or scan!</span>
+<span class="kw">public interface</span> <span class="iface">MultiFunctionDevice</span> {
+    <span class="type">void</span> <span class="fn">print</span>(Document doc);
+    <span class="type">void</span> <span class="fn">scan</span>(Document doc);    <span class="cmt">// ❌ basic printers can't scan</span>
+    <span class="type">void</span> <span class="fn">fax</span>(Document doc);     <span class="cmt">// ❌ basic printers can't fax</span>
+    <span class="type">void</span> <span class="fn">copyColor</span>(Document doc); <span class="cmt">// ❌ B&W printers can't color copy</span>
+}</pre></div>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="lang">Java</span>
+        <span class="filename">✅ ISP — Segregated printer interfaces</span>
+      </div>
+      <div class="code-body"><pre><span class="cmt">// ✅ Each interface = one capability</span>
+<span class="kw">public interface</span> <span class="iface">Printable</span> {
+    <span class="type">void</span> <span class="fn">print</span>(Document doc);
+}
+
+<span class="kw">public interface</span> <span class="iface">Scannable</span> {
+    <span class="type">void</span> <span class="fn">scan</span>(Document doc);
+}
+
+<span class="kw">public interface</span> <span class="iface">Faxable</span> {
+    <span class="type">void</span> <span class="fn">fax</span>(Document doc);
+}
+
+<span class="cmt">// Basic printer — only prints</span>
+<span class="kw">public class</span> <span class="cls">BasicPrinter</span> <span class="kw">implements</span> <span class="iface">Printable</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">print</span>(Document doc) {
+        System.out.println(<span class="str">"Printing: "</span> + doc.getName());
+    }
+}
+
+<span class="cmt">// All-in-one printer — implements all capabilities</span>
+<span class="kw">public class</span> <span class="cls">AllInOnePrinter</span> <span class="kw">implements</span> <span class="iface">Printable</span>, <span class="iface">Scannable</span>, <span class="iface">Faxable</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">print</span>(Document doc) { <span class="cmt">/* ... */</span> }
+
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">scan</span>(Document doc)  { <span class="cmt">/* ... */</span> }
+
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">fax</span>(Document doc)   { <span class="cmt">/* ... */</span> }
+}</pre></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- BAD HABITS -->
+  <div class="section">
+    <div class="section-label">06 — Watch Out</div>
+    <h2>🚩 Bad Habits to Avoid</h2>
+
+    <ul class="habit-list">
+      <li>
+        <span class="habit-icon">🏋️</span>
+        <div class="habit-text">
+          <strong>The "God Interface" habit</strong>
+          <span>Creating one massive interface (e.g., <code>IAnimal</code> with 15 methods) for all subclasses. Not every animal can fly, swim, or roar.</span>
+        </div>
+      </li>
+      <li>
+        <span class="habit-icon">🚫</span>
+        <div class="habit-text">
+          <strong>Throwing UnsupportedOperationException</strong>
+          <span>If you're writing <code>throw new UnsupportedOperationException()</code> in an interface method — that's ISP screaming at you. Break the interface!</span>
+        </div>
+      </li>
+      <li>
+        <span class="habit-icon">🔗</span>
+        <div class="habit-text">
+          <strong>Coupling unrelated behaviors in one interface</strong>
+          <span>Like putting <code>save()</code> and <code>render()</code> in the same interface. Persistence and rendering are different concerns.</span>
+        </div>
+      </li>
+      <li>
+        <span class="habit-icon">📦</span>
+        <div class="habit-text">
+          <strong>Returning empty/no-op implementations</strong>
+          <span>Implementing a method as <code>{ }</code> (blank body) just to satisfy the interface is silent ISP violation — harder to detect but equally bad.</span>
+        </div>
+      </li>
+      <li>
+        <span class="habit-icon">⚗️</span>
+        <div class="habit-text">
+          <strong>Over-segregation (the opposite extreme)</strong>
+          <span>Don't go crazy splitting every method into its own interface. If methods are always used together, they belong together. Balance is key.</span>
+        </div>
+      </li>
+      <li>
+        <span class="habit-icon">🧪</span>
+        <div class="habit-text">
+          <strong>Ignoring ISP in test mocks</strong>
+          <span>If your mock classes require stubbing 8 methods to test 1 behavior — your interface is too fat. ISP makes testing naturally cleaner.</span>
+        </div>
+      </li>
+    </ul>
+
+    <div class="tip-card warn">
+      <div class="tip-icon">💡</div>
+      <div class="tip-content">
+        <strong>The Litmus Test</strong>
+        <p>Ask yourself: <em>"Does EVERY class that implements this interface actually USE every method?"</em> If the answer is no — you need to segregate.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- QUICK SUMMARY -->
+  <div class="section">
+    <div class="section-label">07 — Summary</div>
+    <h2>📋 Quick Cheatsheet</h2>
+
+    <table>
+      <tr>
+        <th>Topic</th>
+        <th>Key Point</th>
+      </tr>
+      <tr>
+        <td><strong>What</strong></td>
+        <td>Don't force a class to implement methods it doesn't use</td>
+      </tr>
+      <tr>
+        <td><strong>How</strong></td>
+        <td>Split fat interfaces into smaller, role-specific ones</td>
+      </tr>
+      <tr>
+        <td><strong>Smell</strong></td>
+        <td><code>UnsupportedOperationException</code> or blank method bodies in an impl class</td>
+      </tr>
+      <tr>
+        <td><strong>Benefit</strong></td>
+        <td>Less coupling, easier testing, cleaner code, fewer surprise bugs</td>
+      </tr>
+      <tr>
+        <td><strong>Works with</strong></td>
+        <td>SRP (each interface = one responsibility), DIP, OCP</td>
+      </tr>
+      <tr>
+        <td><strong>Avoid</strong></td>
+        <td>Over-segregation — if methods always go together, keep them together</td>
+      </tr>
+    </table>
+
+    <div class="tip-card info">
+      <div class="tip-icon">🎯</div>
+      <div class="tip-content">
+        <strong>Remember the 3 Questions</strong>
+        <p>1. Does every implementor use EVERY method? &nbsp;2. Am I throwing exceptions for "unsupported" methods? &nbsp;3. Am I testing with too many stubs? If yes → apply ISP.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  LLD Notes — Interface Segregation Principle &nbsp;·&nbsp; SOLID Series &nbsp;·&nbsp; Java
+</div>
+
+</body>
+</html>

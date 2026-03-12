@@ -549,7 +549,7 @@
 
     .form-row {
       display: grid;
-      grid-template-columns: 1fr 2fr auto;
+      grid-template-columns: 1fr 2fr 1fr;
       gap: 12px;
       align-items: end;
     }
@@ -655,6 +655,37 @@
       border-color: var(--accent);
       color: var(--accent);
       background: rgba(240, 165, 0, 0.07);
+    }
+
+    /* SORT BAR */
+    .sort-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .sort-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sort-btn:hover,
+    .sort-btn.active {
+      border-color: var(--accent2);
+      color: var(--accent2);
+      background: rgba(255, 107, 53, 0.07);
     }
 
     /* CARDS */
@@ -1051,13 +1082,10 @@
           <label>Note Title</label>
           <input type="text" id="titleInput" placeholder="e.g. Interface Segregation Principle" />
         </div>
-        <button class="add-btn" onclick="addNote()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Add Note
-        </button>
+        <div class="field">
+          <label>Page Number</label>
+          <input type="number" id="pageNumInput" placeholder="Auto" min="0.1" step="any" />
+        </div>
       </div>
       <div class="form-row" style="margin-top:12px;">
         <div class="field" style="grid-column: 1 / -1;">
@@ -1069,6 +1097,25 @@
           <div class="url-preview" id="urlPreview"></div>
         </div>
       </div>
+      <div class="form-row" style="margin-top:8px;">
+        <button class="add-btn" onclick="addNote()" style="grid-column: 1 / -1; justify-self: start;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add Note
+        </button>
+      </div>
+    </div>
+
+    <!-- Sort bar -->
+    <div class="sort-bar">
+      <span class="filter-label">Sort by:</span>
+      <button class="sort-btn active" onclick="changeSort('pageNum-asc', this)">📄 Page# ↑</button>
+      <button class="sort-btn" onclick="changeSort('pageNum-desc', this)">📄 Page# ↓</button>
+      <button class="sort-btn" onclick="changeSort('date-new', this)">📅 Newest</button>
+      <button class="sort-btn" onclick="changeSort('date-old', this)">📅 Oldest</button>
+      <button class="sort-btn" onclick="changeSort('title-asc', this)">🔤 A-Z</button>
     </div>
 
     <!-- Filter bar -->
@@ -1215,6 +1262,8 @@
       const title = document.getElementById('titleInput').value.trim();
       const path = document.getElementById('hrefInput').value.trim();
       const cat = document.getElementById('categoryInput').value;
+      const pageNumInput = document.getElementById('pageNumInput').value.trim();
+
       if (!title) { shakeField('titleInput'); return; }
       if (!path) { shakeField('hrefInput'); return; }
 
@@ -1223,11 +1272,15 @@
         ? path
         : BASE_URL.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
 
-      notes.push({ id: Date.now(), title, href, category: cat, pageNum: notes.length + 1, date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) });
+      // Use manual page number if provided, otherwise auto-generate
+      const pageNum = pageNumInput ? parseFloat(pageNumInput) : notes.length + 1;
+
+      notes.push({ id: Date.now(), title, href, category: cat, pageNum: pageNum, date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) });
       saveNotes(); renderCards(currentFilter); updateStats();
       toast('✅ Added: ' + title);
       document.getElementById('titleInput').value = '';
       document.getElementById('hrefInput').value = '';
+      document.getElementById('pageNumInput').value = '';
     }
 
     function deleteNote(id) {
@@ -1238,6 +1291,8 @@
     }
 
     let currentFilter = 'all';
+    let currentSort = 'pageNum-asc';
+
     function filterCards(cat, btn) {
       currentFilter = cat;
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -1245,21 +1300,54 @@
       renderCards(cat);
     }
 
+    function changeSort(sortType, btn) {
+      currentSort = sortType;
+      document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderCards(currentFilter);
+    }
+
     // Category display order for "All" view
     const CAT_ORDER = ['solid', 'pattern', 'concept', 'other'];
 
     function sortNotes(list, filter) {
-      if (filter === 'all') {
-        // Group by category in defined order, within each group sort by pageNum ascending
-        return [...list].sort((a, b) => {
+      let sorted = [...list];
+
+      // Apply sorting based on currentSort
+      switch (currentSort) {
+        case 'pageNum-asc':
+          sorted.sort((a, b) => (a.pageNum ?? 9999) - (b.pageNum ?? 9999));
+          break;
+        case 'pageNum-desc':
+          sorted.sort((a, b) => (b.pageNum ?? -1) - (a.pageNum ?? -1));
+          break;
+        case 'date-new':
+          sorted.sort((a, b) => b.id - a.id); // newer IDs are larger (timestamp)
+          break;
+        case 'date-old':
+          sorted.sort((a, b) => a.id - b.id);
+          break;
+        case 'title-asc':
+          sorted.sort((a, b) => a.title.localeCompare(b.title));
+          break;
+      }
+
+      // If viewing "All" and sorting by page number, also group by category
+      if (filter === 'all' && (currentSort === 'pageNum-asc' || currentSort === 'pageNum-desc')) {
+        sorted.sort((a, b) => {
           const catA = CAT_ORDER.indexOf(a.category);
           const catB = CAT_ORDER.indexOf(b.category);
           if (catA !== catB) return catA - catB;
-          return (a.pageNum ?? 9999) - (b.pageNum ?? 9999);
+          // Then apply page number sort within category
+          if (currentSort === 'pageNum-asc') {
+            return (a.pageNum ?? 9999) - (b.pageNum ?? 9999);
+          } else {
+            return (b.pageNum ?? -1) - (a.pageNum ?? -1);
+          }
         });
       }
-      // Specific filter: sort purely by pageNum ascending
-      return [...list].sort((a, b) => (a.pageNum ?? 9999) - (b.pageNum ?? 9999));
+
+      return sorted;
     }
 
     function renderCards(filter) {
@@ -1278,7 +1366,7 @@
       filtered.forEach((note, i) => {
         const b = BADGE_MAP[note.category] || BADGE_MAP.other;
         const short = note.href.length > 36 ? '…' + note.href.slice(-32) : note.href;
-        const num = note.pageNum != null ? String(note.pageNum).padStart(2, '0') : String(i + 1).padStart(2, '0');
+        const num = note.pageNum != null ? (Number.isInteger(note.pageNum) ? String(note.pageNum).padStart(2, '0') : note.pageNum) : String(i + 1).padStart(2, '0');
 
         // Insert category divider in "All" view when category changes
         if (filter === 'all' && note.category !== lastCat) {
@@ -1369,7 +1457,8 @@
     class="card-num-input"
     id="input-${id}"
     type="number"
-    min="1"
+    min="0.1"
+    step="any"
     value="${current}"
     placeholder="##"
     onclick="event.stopPropagation()"
@@ -1393,14 +1482,15 @@
     function savePageNum(id) {
       const inp = document.getElementById('input-' + id);
       if (!inp) return;
-      const val = parseInt(inp.value, 10);
+      const val = parseFloat(inp.value);
       const note = notes.find(n => n.id === id);
       if (!note) return;
 
       if (!isNaN(val) && val > 0) {
         note.pageNum = val;
         saveNotes();
-        toast('✏️ Page number updated to ' + String(val).padStart(2, '0'));
+        const displayNum = Number.isInteger(val) ? String(val).padStart(2, '0') : val;
+        toast('✏️ Page number updated to ' + displayNum);
       }
       renderCards(currentFilter);
     }
@@ -1430,7 +1520,7 @@
     }
 
 
-    ['titleInput', 'hrefInput'].forEach(id => {
+    ['titleInput', 'hrefInput', 'pageNumInput'].forEach(id => {
       document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') addNote(); });
     });
 
