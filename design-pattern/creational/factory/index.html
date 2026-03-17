@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Factory Pattern — LLD Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1f2d45;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --good: #10b981;
+    --bad: #ef4444;
+    --warn: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --code-bg: #0d1117;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, #0a0e17 0%, #0f1729 40%, #120d24 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 40px 50px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,212,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 30%;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .solid-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.25);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .solid-badge span { font-size: 16px; }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5vw, 54px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 600px;
+    margin-bottom: 28px;
+  }
+
+  .hero-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 960px; margin: 0 auto; padding: 48px 32px; }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  h2 { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; color: #f1f5f9; margin-bottom: 20px; }
+  h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 600; color: #cbd5e1; margin-bottom: 12px; }
+  h4 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 600; color: #94a3b8; margin-bottom: 8px; }
+
+  .section { margin-bottom: 60px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 52px 0; }
+
+  p { color: #94a3b8; }
+
+  /* ── TYPE BANNER ── */
+  .type-banner {
+    border-radius: 12px;
+    padding: 28px 30px;
+    margin: 0 0 28px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .type-banner.simple   { background: linear-gradient(135deg, rgba(0,212,255,0.07), rgba(0,212,255,0.02));   border: 1px solid rgba(0,212,255,0.25); }
+  .type-banner.method   { background: linear-gradient(135deg, rgba(124,58,237,0.09), rgba(124,58,237,0.02)); border: 1px solid rgba(124,58,237,0.25); }
+  .type-banner.abstract { background: linear-gradient(135deg, rgba(255,107,53,0.08), rgba(255,107,53,0.02)); border: 1px solid rgba(255,107,53,0.25); }
+
+  .type-banner .tb-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 72px;
+    font-weight: 800;
+    line-height: 1;
+    position: absolute;
+    right: 24px; top: 12px;
+    opacity: 0.05;
+  }
+  .type-banner.simple   .tb-num { color: var(--accent); }
+  .type-banner.method   .tb-num { color: #a78bfa; }
+  .type-banner.abstract .tb-num { color: var(--accent2); }
+
+  .type-banner .tb-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .type-banner.simple   .tb-label { color: var(--accent); }
+  .type-banner.method   .tb-label { color: #a78bfa; }
+  .type-banner.abstract .tb-label { color: var(--accent2); }
+
+  .type-banner h2 {
+    margin-bottom: 8px;
+    font-size: 28px;
+  }
+
+  .type-banner p {
+    font-size: 14px;
+    max-width: 620px;
+  }
+
+  .tb-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .tb-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 3px;
+  }
+  .type-banner.simple   .tb-pill { background: rgba(0,212,255,0.1);   color: var(--accent);  border: 1px solid rgba(0,212,255,0.2); }
+  .type-banner.method   .tb-pill { background: rgba(124,58,237,0.1); color: #a78bfa;        border: 1px solid rgba(124,58,237,0.2); }
+  .type-banner.abstract .tb-pill { background: rgba(255,107,53,0.1);  color: var(--accent2); border: 1px solid rgba(255,107,53,0.2); }
+
+  /* ── DEFINITION BOX ── */
+  .definition-box {
+    background: linear-gradient(135deg, rgba(0,212,255,0.05), rgba(124,58,237,0.05));
+    border: 1px solid rgba(0,212,255,0.2);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin: 24px 0;
+    position: relative;
+  }
+  .definition-box .quote-icon {
+    font-size: 48px;
+    color: rgba(0,212,255,0.1);
+    font-family: Georgia, serif;
+    position: absolute;
+    top: 8px; right: 16px;
+    line-height: 1;
+  }
+  .definition-box p { font-size: 16px; color: #cbd5e1; font-style: italic; line-height: 1.8; }
+  .definition-box strong { color: var(--accent); font-style: normal; }
+
+  /* ── SIMPLE BOX ── */
+  .simple-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 26px;
+    margin: 20px 0;
+  }
+  .simple-box .emoji-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent2);
+    margin-bottom: 10px;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.5px;
+  }
+  .simple-box p { font-size: 14px; color: #94a3b8; margin: 0; }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .code-header .lang   { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .code-header .filename { font-size: 12px; color: var(--accent); }
+
+  .file-badge {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .file-badge.bad  { background: rgba(239,68,68,0.15);  color: var(--bad);  border: 1px solid rgba(239,68,68,0.3); }
+  .file-badge.good { background: rgba(16,185,129,0.12); color: var(--good); border: 1px solid rgba(16,185,129,0.3); }
+  .file-badge.info { background: rgba(0,212,255,0.10);  color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
+  .file-badge.warn { background: rgba(245,158,11,0.12); color: var(--warn); border: 1px solid rgba(245,158,11,0.3); }
+
+  .code-body { padding: 20px 22px; overflow-x: auto; line-height: 1.8; }
+  .code-body pre { white-space: pre; }
+
+  /* Syntax */
+  .kw   { color: #ff79c6; }
+  .cls  { color: #8be9fd; }
+  .fn   { color: #50fa7b; }
+  .str  { color: #f1fa8c; }
+  .cmt  { color: #6272a4; font-style: italic; }
+  .ann  { color: #ffb86c; }
+  .type { color: #bd93f9; }
+  .iface{ color: #00d4ff; }
+  .num  { color: #ff6b35; }
+
+  /* ── PANEL GRID ── */
+  .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  @media(max-width: 640px) { .panel-grid { grid-template-columns: 1fr; } }
+
+  .panel { border-radius: 10px; overflow: hidden; }
+  .panel-header {
+    padding: 12px 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel.bad  .panel-header { background: rgba(239,68,68,0.15);  color: var(--bad);  border-bottom: 1px solid rgba(239,68,68,0.2); }
+  .panel.good .panel-header { background: rgba(16,185,129,0.12); color: var(--good); border-bottom: 1px solid rgba(16,185,129,0.2); }
+  .panel.bad  { border: 1px solid rgba(239,68,68,0.2); }
+  .panel.good { border: 1px solid rgba(16,185,129,0.2); }
+  .panel .code-block { margin: 0; border: none; border-radius: 0; }
+  .panel .code-header { border-radius: 0; }
+
+  /* ── TIP CARDS ── */
+  .tip-card {
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 16px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .tip-card.warn    { background: rgba(245,158,11,0.07);  border: 1px solid rgba(245,158,11,0.25); }
+  .tip-card.danger  { background: rgba(239,68,68,0.07);   border: 1px solid rgba(239,68,68,0.25); }
+  .tip-card.success { background: rgba(16,185,129,0.07);  border: 1px solid rgba(16,185,129,0.25); }
+  .tip-card.info    { background: rgba(0,212,255,0.05);   border: 1px solid rgba(0,212,255,0.2); }
+  .tip-card.purple  { background: rgba(124,58,237,0.07);  border: 1px solid rgba(124,58,237,0.25); }
+  .tip-card.orange  { background: rgba(255,107,53,0.07);  border: 1px solid rgba(255,107,53,0.25); }
+  .tip-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+  .tip-content strong { display: block; font-family: 'Syne', sans-serif; font-size: 14px; margin-bottom: 5px; }
+  .tip-card.warn    .tip-content strong { color: var(--warn); }
+  .tip-card.danger  .tip-content strong { color: var(--bad); }
+  .tip-card.success .tip-content strong { color: var(--good); }
+  .tip-card.info    .tip-content strong { color: var(--accent); }
+  .tip-card.purple  .tip-content strong { color: #a78bfa; }
+  .tip-card.orange  .tip-content strong { color: var(--accent2); }
+  .tip-content p { font-size: 14px; color: #94a3b8; }
+
+  /* ── TABLE ── */
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+  th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 12px 14px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  td { padding: 11px 14px; border: 1px solid var(--border); color: #94a3b8; vertical-align: top; }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  td strong { color: #e2e8f0; }
+  td.good-cell { color: var(--good); }
+  td.bad-cell  { color: var(--bad); }
+  td.warn-cell { color: var(--warn); }
+
+  /* ── HABIT LIST ── */
+  .habit-list { list-style: none; margin: 16px 0; }
+  .habit-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+  }
+  .habit-list li:hover { border-color: rgba(239,68,68,0.4); }
+  .habit-icon { font-size: 18px; flex-shrink: 0; }
+  .habit-text strong { display: block; font-size: 14px; color: #f1f5f9; font-family: 'Syne', sans-serif; margin-bottom: 3px; }
+  .habit-text span   { font-size: 13px; color: var(--muted); }
+
+  /* ── ARROW FLOW ── */
+  .arrow-flow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+  .flow-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #cbd5e1;
+    text-align: center;
+  }
+  .flow-box.accent { border-color: rgba(0,212,255,0.35);  color: var(--accent);  background: rgba(0,212,255,0.05); }
+  .flow-box.purple { border-color: rgba(124,58,237,0.35); color: #a78bfa;        background: rgba(124,58,237,0.05); }
+  .flow-box.orange { border-color: rgba(255,107,53,0.35); color: var(--accent2); background: rgba(255,107,53,0.05); }
+  .flow-box.good   { border-color: rgba(16,185,129,0.35); color: var(--good);    background: rgba(16,185,129,0.05); }
+  .flow-arrow { color: var(--accent); font-size: 16px; flex-shrink: 0; }
+
+  /* ── STRUCTURE DIAGRAM ── */
+  .struct-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #64748b;
+    overflow-x: auto;
+  }
+  .struct-diagram .sd-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; flex-wrap: wrap; }
+  .sd-box {
+    padding: 6px 14px;
+    border-radius: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .sd-box.interface { background: rgba(0,212,255,0.1);   color: var(--accent);  border: 1px solid rgba(0,212,255,0.25); }
+  .sd-box.concrete  { background: rgba(16,185,129,0.08); color: var(--good);    border: 1px solid rgba(16,185,129,0.2); }
+  .sd-box.factory   { background: rgba(124,58,237,0.1); color: #a78bfa;        border: 1px solid rgba(124,58,237,0.25); }
+  .sd-box.client    { background: rgba(255,107,53,0.08); color: var(--accent2); border: 1px solid rgba(255,107,53,0.2); }
+  .sd-arrow { color: var(--muted); font-size: 14px; }
+
+  /* ── INLINE CODE ── */
+  code {
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════ -->
+<div class="hero">
+  <div class="solid-badge"><span>🏭</span> Creational Patterns — LLD with Java</div>
+  <h1>Factory<br><em>Pattern</em></h1>
+  <p class="hero-sub">Stop scattering <code>new</code> everywhere. Learn all three factory types — Simple Factory, Factory Method, and Abstract Factory — with real Java examples.</p>
+  <div class="hero-tags">
+    <span class="tag">Java</span>
+    <span class="tag">LLD</span>
+    <span class="tag">Creational</span>
+    <span class="tag">GoF Pattern</span>
+    <span class="tag">Simple Factory</span>
+    <span class="tag">Factory Method</span>
+    <span class="tag">Abstract Factory</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ══════════════════════════════════════════════
+     01 — WHAT IS FACTORY PATTERN
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">01 — Foundation</div>
+  <h2>What is the Factory Pattern?</h2>
+
+  <div class="definition-box">
+    <div class="quote-icon">"</div>
+    <p>"Define an interface for creating an object, but let <strong>subclasses decide which class to instantiate</strong>. Factory Method lets a class defer instantiation to subclasses."</p>
+    <p style="margin-top:10px; font-size:13px; color:#475569; font-style:normal;">— Gang of Four (GoF), Design Patterns, 1994</p>
+  </div>
+
+  <div class="simple-box">
+    <div class="emoji-title">🧠 In Plain English</div>
+    <p>Instead of writing <code>new Dog()</code> or <code>new Cat()</code> scattered all over your code, you ask a <strong>Factory</strong> to give you an animal — "give me a Dog" — and the factory handles the <em>how</em>. Your code only cares about the <em>what</em>, not the <em>which concrete class</em>.</p>
+  </div>
+
+  <div class="tip-card info">
+    <div class="tip-icon">💡</div>
+    <div class="tip-content">
+      <strong>Core Idea — Replace <code>new</code> with a Factory call</strong>
+      <p><strong>Without Factory:</strong> <code>Shape s = new Circle();</code> — client knows the concrete class.<br>
+         <strong>With Factory:</strong> <code>Shape s = ShapeFactory.create("circle");</code> — client only knows the interface.</p>
+    </div>
+  </div>
+
+  <h3>Why Do We Need It?</h3>
+  <table>
+    <tr><th>Problem Without Factory</th><th>Solution With Factory</th></tr>
+    <tr>
+      <td>Client code has <code>new ConcreteClass()</code> everywhere — tightly coupled</td>
+      <td>Client depends only on the interface; factory handles instantiation</td>
+    </tr>
+    <tr>
+      <td>Adding a new type requires hunting every <code>new</code> call and updating it</td>
+      <td>Add new type in one place — the factory. Client code unchanged.</td>
+    </tr>
+    <tr>
+      <td>Unit testing is hard — can't easily substitute a mock</td>
+      <td>Inject a different factory in tests to return mocks</td>
+    </tr>
+    <tr>
+      <td>Business logic is mixed with object creation logic</td>
+      <td>Creation is separated — Single Responsibility Principle satisfied</td>
+    </tr>
+  </table>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════
+     02 — THREE TYPES OVERVIEW
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">02 — Overview</div>
+  <h2>3 Types of Factory Pattern</h2>
+
+  <p style="margin-bottom: 22px;">The name "Factory Pattern" is actually an umbrella for three related but distinct patterns. They evolve in complexity — each solving a problem the previous one couldn't.</p>
+
+  <table>
+    <tr>
+      <th>#</th>
+      <th>Type</th>
+      <th>GoF Pattern?</th>
+      <th>Core Idea</th>
+      <th>Use When</th>
+    </tr>
+    <tr>
+      <td><strong style="color:var(--accent)">①</strong></td>
+      <td><strong>Simple Factory</strong></td>
+      <td class="warn-cell">⚠️ Not official GoF</td>
+      <td>One static method creates all variants via if/switch</td>
+      <td>Few types, creation logic is simple</td>
+    </tr>
+    <tr>
+      <td><strong style="color:#a78bfa">②</strong></td>
+      <td><strong>Factory Method</strong></td>
+      <td class="good-cell">✅ GoF Pattern</td>
+      <td>Base class defines the "what", subclasses override the "which"</td>
+      <td>Multiple creators, each makes one type</td>
+    </tr>
+    <tr>
+      <td><strong style="color:var(--accent2)">③</strong></td>
+      <td><strong>Abstract Factory</strong></td>
+      <td class="good-cell">✅ GoF Pattern</td>
+      <td>Factory of factories — creates <em>families</em> of related objects</td>
+      <td>Families of products that must stay consistent</td>
+    </tr>
+  </table>
+
+  <div class="arrow-flow" style="margin-top:24px;">
+    <div class="flow-box accent">Simple Factory<br><small>1 creator, if/switch</small></div>
+    <div class="flow-arrow">→ evolves →</div>
+    <div class="flow-box purple">Factory Method<br><small>subclass decides type</small></div>
+    <div class="flow-arrow">→ evolves →</div>
+    <div class="flow-box orange">Abstract Factory<br><small>families of objects</small></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════
+     03 — SIMPLE FACTORY
+════════════════════════════════════════════════ -->
+<div class="section">
+
+  <div class="type-banner simple">
+    <div class="tb-num">01</div>
+    <div class="tb-label">Type One</div>
+    <h2>Simple Factory</h2>
+    <p>Not an official GoF pattern, but the most common starting point. A single class with a static method that creates and returns objects based on a parameter.</p>
+    <div class="tb-pills">
+      <span class="tb-pill">Static Method</span>
+      <span class="tb-pill">One Factory Class</span>
+      <span class="tb-pill">if / switch inside</span>
+      <span class="tb-pill">Not GoF Official</span>
+    </div>
+  </div>
+
+  <h3>Structure</h3>
+  <div class="struct-diagram">
+    <div class="sd-row">
+      <div class="sd-box client">Client</div>
+      <span class="sd-arrow">──calls──▶</span>
+      <div class="sd-box factory">ShapeFactory.create("circle")</div>
+      <span class="sd-arrow">──returns──▶</span>
+      <div class="sd-box interface">«interface» Shape</div>
+    </div>
+    <div class="sd-row" style="margin-top:10px; padding-left: 20px;">
+      <span class="sd-arrow" style="margin-right:4px;">└─ creates ──▶</span>
+      <div class="sd-box concrete">Circle</div>
+      <span style="color:var(--muted); margin: 0 6px;">or</span>
+      <div class="sd-box concrete">Rectangle</div>
+      <span style="color:var(--muted); margin: 0 6px;">or</span>
+      <div class="sd-box concrete">Triangle</div>
+    </div>
+  </div>
+
+  <!-- BAD — without factory -->
+  <div class="panel-grid">
+    <div class="panel bad">
+      <div class="panel-header">❌ BAD — Without Factory</div>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">Java</span><span class="filename">Client.java</span></div>
+        <div class="code-body"><pre><span class="cmt">// ❌ Client knows every concrete class</span>
+<span class="cmt">// ❌ Adding Triangle = change this file</span>
+<span class="kw">if</span> (type.equals(<span class="str">"circle"</span>)) {
+    shape = <span class="kw">new</span> <span class="cls">Circle</span>();
+} <span class="kw">else if</span> (type.equals(<span class="str">"rect"</span>)) {
+    shape = <span class="kw">new</span> <span class="cls">Rectangle</span>();
+}
+shape.<span class="fn">draw</span>();</pre></div>
+      </div>
+    </div>
+    <div class="panel good">
+      <div class="panel-header">✅ GOOD — With Simple Factory</div>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">Java</span><span class="filename">Client.java</span></div>
+        <div class="code-body"><pre><span class="cmt">// ✅ Client knows only the interface</span>
+<span class="cmt">// ✅ Creation logic centralised</span>
+<span class="iface">Shape</span> shape =
+    <span class="cls">ShapeFactory</span>.<span class="fn">create</span>(type);
+shape.<span class="fn">draw</span>();
+
+
+
+</pre></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full code -->
+  <div class="code-block">
+    <div class="code-header">
+      <span class="lang">Java</span>
+      <span class="filename">Simple Factory — Full Implementation</span>
+    </div>
+    <div class="code-body"><pre><span class="cmt">// ── Step 1: Product Interface ──────────────────────────────────</span>
+<span class="kw">public interface</span> <span class="iface">Shape</span> {
+    <span class="kw">void</span> <span class="fn">draw</span>();
+}
+
+<span class="cmt">// ── Step 2: Concrete Products ──────────────────────────────────</span>
+<span class="kw">public class</span> <span class="cls">Circle</span> <span class="kw">implements</span> <span class="iface">Shape</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">draw</span>() { System.out.println(<span class="str">"Drawing ⭕ Circle"</span>); }
+}
+
+<span class="kw">public class</span> <span class="cls">Rectangle</span> <span class="kw">implements</span> <span class="iface">Shape</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">draw</span>() { System.out.println(<span class="str">"Drawing ▭ Rectangle"</span>); }
+}
+
+<span class="kw">public class</span> <span class="cls">Triangle</span> <span class="kw">implements</span> <span class="iface">Shape</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">draw</span>() { System.out.println(<span class="str">"Drawing △ Triangle"</span>); }
+}
+
+<span class="cmt">// ── Step 3: The Simple Factory ─────────────────────────────────</span>
+<span class="kw">public class</span> <span class="cls">ShapeFactory</span> {
+
+    <span class="cmt">// static method — no need to instantiate the factory itself</span>
+    <span class="kw">public static</span> <span class="iface">Shape</span> <span class="fn">create</span>(String type) {
+        <span class="kw">return switch</span> (type.toLowerCase()) {
+            <span class="kw">case</span> <span class="str">"circle"</span>    -> <span class="kw">new</span> <span class="cls">Circle</span>();
+            <span class="kw">case</span> <span class="str">"rectangle"</span> -> <span class="kw">new</span> <span class="cls">Rectangle</span>();
+            <span class="kw">case</span> <span class="str">"triangle"</span>  -> <span class="kw">new</span> <span class="cls">Triangle</span>();
+            <span class="kw">default</span>         -> <span class="kw">throw new</span> <span class="cls">IllegalArgumentException</span>(<span class="str">"Unknown shape: "</span> + type);
+        };
+    }
+}
+
+<span class="cmt">// ── Step 4: Client ─────────────────────────────────────────────</span>
+<span class="kw">public class</span> <span class="cls">Main</span> {
+    <span class="kw">public static void</span> <span class="fn">main</span>(String[] args) {
+        <span class="iface">Shape</span> s1 = <span class="cls">ShapeFactory</span>.<span class="fn">create</span>(<span class="str">"circle"</span>);     <span class="cmt">// Drawing ⭕ Circle</span>
+        <span class="iface">Shape</span> s2 = <span class="cls">ShapeFactory</span>.<span class="fn">create</span>(<span class="str">"rectangle"</span>); <span class="cmt">// Drawing ▭ Rectangle</span>
+        <span class="iface">Shape</span> s3 = <span class="cls">ShapeFactory</span>.<span class="fn">create</span>(<span class="str">"triangle"</span>);  <span class="cmt">// Drawing △ Triangle</span>
+        s1.<span class="fn">draw</span>(); s2.<span class="fn">draw</span>(); s3.<span class="fn">draw</span>();
+    }
+}</pre></div>
+  </div>
+
+  <div class="tip-card warn">
+    <div class="tip-icon">⚠️</div>
+    <div class="tip-content">
+      <strong>Limitation of Simple Factory</strong>
+      <p>Every time you add a new shape, you <strong>must edit <code>ShapeFactory</code></strong> — this violates the Open/Closed Principle (OCP). The factory grows into a big if/switch block over time. That's why Factory Method was invented.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════
+     04 — FACTORY METHOD
+════════════════════════════════════════════════ -->
+<div class="section">
+
+  <div class="type-banner method">
+    <div class="tb-num">02</div>
+    <div class="tb-label">Type Two — Official GoF</div>
+    <h2>Factory Method Pattern</h2>
+    <p>Define an abstract method in a base creator class. Each subclass overrides it to produce its specific product. The base class orchestrates the workflow — subclasses decide what to create.</p>
+    <div class="tb-pills">
+      <span class="tb-pill">Abstract Method</span>
+      <span class="tb-pill">Subclass decides type</span>
+      <span class="tb-pill">Open/Closed Principle</span>
+      <span class="tb-pill">Official GoF</span>
+    </div>
+  </div>
+
+  <h3>Structure</h3>
+  <div class="struct-diagram">
+    <div class="sd-row">
+      <div class="sd-box factory" style="min-width:200px;">«abstract» Notifier<br><small>+ abstract createChannel()</small></div>
+      <span class="sd-arrow">◀── extends ──</span>
+      <div class="sd-box concrete">EmailNotifier</div>
+      <span style="color:var(--muted); margin:0 6px;">/</span>
+      <div class="sd-box concrete">SMSNotifier</div>
+      <span style="color:var(--muted); margin:0 6px;">/</span>
+      <div class="sd-box concrete">PushNotifier</div>
+    </div>
+    <div class="sd-row" style="margin-top:10px;">
+      <span style="color:var(--muted); font-size:11px;">Each subclass overrides createChannel() and returns its own concrete Channel object</span>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="lang">Java</span>
+      <span class="filename">Factory Method — Full Implementation (Notification System)</span>
+    </div>
+    <div class="code-body"><pre><span class="cmt">// ── Step 1: Product Interface ──────────────────────────────────</span>
+<span class="kw">public interface</span> <span class="iface">Channel</span> {
+    <span class="kw">void</span> <span class="fn">send</span>(String message);
+}
+
+<span class="cmt">// ── Step 2: Concrete Products ──────────────────────────────────</span>
+<span class="kw">public class</span> <span class="cls">EmailChannel</span> <span class="kw">implements</span> <span class="iface">Channel</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">send</span>(String msg) { System.out.println(<span class="str">"📧 Email: "</span> + msg); }
+}
+
+<span class="kw">public class</span> <span class="cls">SMSChannel</span> <span class="kw">implements</span> <span class="iface">Channel</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">send</span>(String msg) { System.out.println(<span class="str">"📱 SMS: "</span> + msg); }
+}
+
+<span class="kw">public class</span> <span class="cls">PushChannel</span> <span class="kw">implements</span> <span class="iface">Channel</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">public void</span> <span class="fn">send</span>(String msg) { System.out.println(<span class="str">"🔔 Push: "</span> + msg); }
+}
+
+<span class="cmt">// ── Step 3: Abstract Creator ───────────────────────────────────</span>
+<span class="kw">public abstract class</span> <span class="cls">Notifier</span> {
+
+    <span class="cmt">// ✅ THE Factory Method — subclasses must override this</span>
+    <span class="kw">protected abstract</span> <span class="iface">Channel</span> <span class="fn">createChannel</span>();
+
+    <span class="cmt">// ✅ Template — uses the factory method internally</span>
+    <span class="cmt">// Client calls notify() — never worries about which Channel</span>
+    <span class="kw">public void</span> <span class="fn">notify</span>(String message) {
+        <span class="iface">Channel</span> channel = <span class="fn">createChannel</span>(); <span class="cmt">// delegate to subclass</span>
+        channel.<span class="fn">send</span>(message);
+    }
+}
+
+<span class="cmt">// ── Step 4: Concrete Creators ──────────────────────────────────</span>
+<span class="kw">public class</span> <span class="cls">EmailNotifier</span> <span class="kw">extends</span> <span class="cls">Notifier</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">protected</span> <span class="iface">Channel</span> <span class="fn">createChannel</span>() {
+        <span class="kw">return new</span> <span class="cls">EmailChannel</span>(); <span class="cmt">// ✅ subclass decides: Email</span>
+    }
+}
+
+<span class="kw">public class</span> <span class="cls">SMSNotifier</span> <span class="kw">extends</span> <span class="cls">Notifier</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">protected</span> <span class="iface">Channel</span> <span class="fn">createChannel</span>() {
+        <span class="kw">return new</span> <span class="cls">SMSChannel</span>(); <span class="cmt">// ✅ subclass decides: SMS</span>
+    }
+}
+
+<span class="kw">public class</span> <span class="cls">PushNotifier</span> <span class="kw">extends</span> <span class="cls">Notifier</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">protected</span> <span class="iface">Channel</span> <span class="fn">createChannel</span>() {
+        <span class="kw">return new</span> <span class="cls">PushChannel</span>(); <span class="cmt">// ✅ subclass decides: Push</span>
+    }
+}
+
+<span class="cmt">// ── Step 5: Client ─────────────────────────────────────────────</span>
+<span class="kw">public class</span> <span class="cls">Main</span> {
+    <span class="kw">public static void</span> <span class="fn">main</span>(String[] args) {
+        <span class="cmt">// ✅ Client works with the abstract Notifier — no concrete class names!</span>
+        <span class="cls">Notifier</span> n1 = <span class="kw">new</span> <span class="cls">EmailNotifier</span>();
+        <span class="cls">Notifier</span> n2 = <span class="kw">new</span> <span class="cls">SMSNotifier</span>();
+        <span class="cls">Notifier</span> n3 = <span class="kw">new</span> <span class="cls">PushNotifier</span>();
+
+        n1.<span class="fn">notify</span>(<span class="str">"Order confirmed!"</span>);  <span class="cmt">// 📧 Email: Order confirmed!</span>
+        n2.<span class="fn">notify</span>(<span class="str">"OTP: 845231"</span>);       <span class="cmt">// 📱 SMS: OTP: 845231</span>
+        n3.<span class="fn">notify</span>(<span class="str">"Your order shipped"</span>); <span class="cmt">// 🔔 Push: Your order shipped</span>
+    }
+}</pre></div>
+  </div>
+
+  <div class="tip-card purple">
+    <div class="tip-icon">✅</div>
+    <div class="tip-content">
+      <strong>Key Advantage Over Simple Factory</strong>
+      <p>Adding a new channel (e.g. <code>WhatsAppNotifier</code>) requires <strong>zero changes to existing classes</strong>. Just create a new subclass and override <code>createChannel()</code>. This fully satisfies the <strong>Open/Closed Principle</strong>.</p>
+    </div>
+  </div>
+
+  <div class="tip-card warn">
+    <div class="tip-icon">⚠️</div>
+    <div class="tip-content">
+      <strong>Limitation of Factory Method</strong>
+      <p>Factory Method creates <strong>one type of product</strong> per factory. What if you need to create a whole <em>family</em> of related objects together — e.g. a <code>Button</code> + <code>Checkbox</code> + <code>TextField</code> all in the same OS theme? That's where Abstract Factory comes in.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════
+     05 — ABSTRACT FACTORY
+════════════════════════════════════════════════ -->
+<div class="section">
+
+  <div class="type-banner abstract">
+    <div class="tb-num">03</div>
+    <div class="tb-label">Type Three — Official GoF</div>
+    <h2>Abstract Factory Pattern</h2>
+    <p>A factory of factories. Provides an interface for creating <em>families</em> of related or dependent objects — without specifying their concrete classes. Guarantees that products from the same family are always compatible.</p>
+    <div class="tb-pills">
+      <span class="tb-pill">Family of Objects</span>
+      <span class="tb-pill">Multiple Products</span>
+      <span class="tb-pill">Consistency Guaranteed</span>
+      <span class="tb-pill">Official GoF</span>
+    </div>
+  </div>
+
+  <div class="simple-box">
+    <div class="emoji-title">🧠 Real World Analogy</div>
+    <p>Imagine a <strong>UI theme factory</strong>. You pick "Dark Theme" and get a <em>DarkButton</em>, <em>DarkCheckbox</em>, and <em>DarkTextField</em> — all matching. Or pick "Light Theme" and get all Light versions. The Abstract Factory ensures you never accidentally mix a DarkButton with a LightCheckbox.</p>
+  </div>
+
+  <h3>Structure</h3>
+  <div class="struct-diagram">
+    <div class="sd-row">
+      <div class="sd-box factory" style="min-width:200px;">«interface» UIFactory<br><small>createButton() / createCheckbox()</small></div>
+    </div>
+    <div class="sd-row" style="margin-top:8px; padding-left:20px; gap:20px;">
+      <div>
+        <span class="sd-arrow">▼ implements</span><br>
+        <div class="sd-box concrete" style="margin-top:4px;">WindowsFactory<br><small>→ WinButton, WinCheckbox</small></div>
+      </div>
+      <div>
+        <span class="sd-arrow">▼ implements</span><br>
+        <div class="sd-box concrete" style="margin-top:4px;">MacFactory<br><small>→ MacButton, MacCheckbox</small></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="lang">Java</span>
+      <span class="filename">Abstract Factory — Full Implementation (Cross-Platform UI)</span>
+    </div>
+    <div class="code-body"><pre><span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="cmt">// STEP 1 — Abstract Products (what every family must provide)</span>
+<span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="kw">public interface</span> <span class="iface">Button</span> {
+    <span class="kw">void</span> <span class="fn">render</span>();
+    <span class="kw">void</span> <span class="fn">onClick</span>();
+}
+
+<span class="kw">public interface</span> <span class="iface">Checkbox</span> {
+    <span class="kw">void</span> <span class="fn">render</span>();
+    <span class="kw">void</span> <span class="fn">onCheck</span>();
+}
+
+<span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="cmt">// STEP 2 — Concrete Products — Windows Family</span>
+<span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="kw">public class</span> <span class="cls">WindowsButton</span> <span class="kw">implements</span> <span class="iface">Button</span> {
+    <span class="ann">@Override</span> <span class="kw">public void</span> <span class="fn">render</span>()   { System.out.println(<span class="str">"🪟 Rendering Windows Button"</span>); }
+    <span class="ann">@Override</span> <span class="kw">public void</span> <span class="fn">onClick</span>()  { System.out.println(<span class="str">"🪟 Windows Button clicked"</span>); }
+}
+
+<span class="kw">public class</span> <span class="cls">WindowsCheckbox</span> <span class="kw">implements</span> <span class="iface">Checkbox</span> {
+    <span class="ann">@Override</span> <span class="kw">public void</span> <span class="fn">render</span>()   { System.out.println(<span class="str">"🪟 Rendering Windows Checkbox"</span>); }
+    <span class="ann">@Override</span> <span class="kw">public void</span> <span class="fn">onCheck</span>()  { System.out.println(<span class="str">"🪟 Windows Checkbox checked"</span>); }
+}
+
+<span class="cmt">// Concrete Products — Mac Family</span>
+<span class="kw">public class</span> <span class="cls">MacButton</span> <span class="kw">implements</span> <span class="iface">Button</span> {
+    <span class="ann">@Override</span> <span class="kw">public void</span> <span class="fn">render</span>()   { System.out.println(<span class="str">"🍎 Rendering Mac Button"</span>); }
+    <span class="ann">@Override</span> <span class="kw">public void</span> <span class="fn">onClick</span>()  { System.out.println(<span class="str">"🍎 Mac Button clicked"</span>); }
+}
+
+<span class="kw">public class</span> <span class="cls">MacCheckbox</span> <span class="kw">implements</span> <span class="iface">Checkbox</span> {
+    <span class="ann">@Override</span> <span class="kw">public void</span> <span class="fn">render</span>()   { System.out.println(<span class="str">"🍎 Rendering Mac Checkbox"</span>); }
+    <span class="ann">@Override</span> <span class="kw">public void</span> <span class="fn">onCheck</span>()  { System.out.println(<span class="str">"🍎 Mac Checkbox checked"</span>); }
+}
+
+<span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="cmt">// STEP 3 — Abstract Factory Interface</span>
+<span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="kw">public interface</span> <span class="iface">UIFactory</span> {
+    <span class="iface">Button</span>   <span class="fn">createButton</span>();
+    <span class="iface">Checkbox</span> <span class="fn">createCheckbox</span>();
+}
+
+<span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="cmt">// STEP 4 — Concrete Factories (one per family)</span>
+<span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="kw">public class</span> <span class="cls">WindowsFactory</span> <span class="kw">implements</span> <span class="iface">UIFactory</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">public</span> <span class="iface">Button</span>   <span class="fn">createButton</span>()   { <span class="kw">return new</span> <span class="cls">WindowsButton</span>(); }
+    <span class="ann">@Override</span>
+    <span class="kw">public</span> <span class="iface">Checkbox</span> <span class="fn">createCheckbox</span>() { <span class="kw">return new</span> <span class="cls">WindowsCheckbox</span>(); }
+}
+
+<span class="kw">public class</span> <span class="cls">MacFactory</span> <span class="kw">implements</span> <span class="iface">UIFactory</span> {
+    <span class="ann">@Override</span>
+    <span class="kw">public</span> <span class="iface">Button</span>   <span class="fn">createButton</span>()   { <span class="kw">return new</span> <span class="cls">MacButton</span>(); }
+    <span class="ann">@Override</span>
+    <span class="kw">public</span> <span class="iface">Checkbox</span> <span class="fn">createCheckbox</span>() { <span class="kw">return new</span> <span class="cls">MacCheckbox</span>(); }
+}
+
+<span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="cmt">// STEP 5 — Application (uses only interfaces, never concrete)</span>
+<span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="kw">public class</span> <span class="cls">Application</span> {
+
+    <span class="kw">private final</span> <span class="iface">Button</span>   button;
+    <span class="kw">private final</span> <span class="iface">Checkbox</span> checkbox;
+
+    <span class="cmt">// ✅ Constructor receives a factory — never knows which OS</span>
+    <span class="kw">public</span> <span class="fn">Application</span>(<span class="iface">UIFactory</span> factory) {
+        <span class="kw">this</span>.button   = factory.<span class="fn">createButton</span>();
+        <span class="kw">this</span>.checkbox = factory.<span class="fn">createCheckbox</span>();
+    }
+
+    <span class="kw">public void</span> <span class="fn">render</span>() {
+        button.<span class="fn">render</span>();
+        checkbox.<span class="fn">render</span>();
+    }
+}
+
+<span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="cmt">// STEP 6 — Main (picks the family based on OS / config)</span>
+<span class="cmt">// ═══════════════════════════════════════════════════════════════</span>
+<span class="kw">public class</span> <span class="cls">Main</span> {
+    <span class="kw">public static void</span> <span class="fn">main</span>(String[] args) {
+        String os = System.<span class="fn">getProperty</span>(<span class="str">"os.name"</span>).toLowerCase();
+
+        <span class="iface">UIFactory</span> factory = os.contains(<span class="str">"mac"</span>)
+            ? <span class="kw">new</span> <span class="cls">MacFactory</span>()
+            : <span class="kw">new</span> <span class="cls">WindowsFactory</span>();
+
+        <span class="cls">Application</span> app = <span class="kw">new</span> <span class="cls">Application</span>(factory);
+        app.<span class="fn">render</span>();
+        <span class="cmt">// On Mac:     🍎 Rendering Mac Button  +  🍎 Rendering Mac Checkbox</span>
+        <span class="cmt">// On Windows: 🪟 Rendering Windows Button + 🪟 Rendering Windows Checkbox</span>
+        <span class="cmt">// ✅ Guaranteed consistent — never mixes families</span>
+    }
+}</pre></div>
+  </div>
+
+  <div class="tip-card orange">
+    <div class="tip-icon">✅</div>
+    <div class="tip-content">
+      <strong>The Superpower of Abstract Factory — Family Consistency</strong>
+      <p>The <code>Application</code> class has absolutely <strong>zero knowledge</strong> of Windows or Mac. It only speaks <code>UIFactory</code>, <code>Button</code>, <code>Checkbox</code>. Switch the entire UI from Windows to Mac by swapping <strong>one line</strong> in <code>Main</code>. Products are <strong>always compatible</strong> — you can never accidentally get a MacButton with a WindowsCheckbox.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════
+     06 — COMPARISON
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">06 — Side by Side</div>
+  <h2>📊 All 3 Types Compared</h2>
+
+  <table>
+    <tr>
+      <th>Aspect</th>
+      <th style="color:var(--accent)">Simple Factory</th>
+      <th style="color:#a78bfa">Factory Method</th>
+      <th style="color:var(--accent2)">Abstract Factory</th>
+    </tr>
+    <tr>
+      <td><strong>Official GoF?</strong></td>
+      <td class="warn-cell">❌ No (idiom)</td>
+      <td class="good-cell">✅ Yes</td>
+      <td class="good-cell">✅ Yes</td>
+    </tr>
+    <tr>
+      <td><strong>How it creates</strong></td>
+      <td>One static method + if/switch</td>
+      <td>Abstract method in base, overridden in subclasses</td>
+      <td>Interface with multiple methods per family</td>
+    </tr>
+    <tr>
+      <td><strong>Products created</strong></td>
+      <td>One type of product</td>
+      <td>One type of product</td>
+      <td>Multiple related product types (a family)</td>
+    </tr>
+    <tr>
+      <td><strong>Add new type?</strong></td>
+      <td class="bad-cell">Edit factory (violates OCP)</td>
+      <td class="good-cell">New subclass — no edits</td>
+      <td class="good-cell">New factory class — no edits</td>
+    </tr>
+    <tr>
+      <td><strong>Complexity</strong></td>
+      <td class="good-cell">Low</td>
+      <td class="warn-cell">Medium</td>
+      <td class="bad-cell">Higher</td>
+    </tr>
+    <tr>
+      <td><strong>Use when</strong></td>
+      <td>Simple apps, few types</td>
+      <td>One product, multiple creators</td>
+      <td>Multiple related products, multiple families</td>
+    </tr>
+    <tr>
+      <td><strong>Example</strong></td>
+      <td><code>ShapeFactory.create("circle")</code></td>
+      <td><code>EmailNotifier</code> overrides <code>createChannel()</code></td>
+      <td><code>WindowsFactory</code> creates button + checkbox together</td>
+    </tr>
+  </table>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════
+     07 — BAD HABITS
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">07 — Watch Out</div>
+  <h2>🚩 Bad Habits to Avoid</h2>
+
+  <ul class="habit-list">
+    <li>
+      <span class="habit-icon">🔨</span>
+      <div class="habit-text">
+        <strong>Using <code>new ConcreteClass()</code> directly in business logic</strong>
+        <span>The whole point of Factory is to remove <code>new PayPalPayment()</code> from your <code>OrderService</code>. If your service still has concrete class names, you haven't applied the pattern — you've just added a factory nobody calls.</span>
+      </div>
+    </li>
+    <li>
+      <span class="habit-icon">🏗️</span>
+      <div class="habit-text">
+        <strong>Turning Simple Factory into a God Class</strong>
+        <span>When your <code>SimpleFactory</code> has 50 cases and creates objects for 10 different systems, it becomes impossible to maintain. This is the signal to upgrade to Factory Method or Abstract Factory.</span>
+      </div>
+    </li>
+    <li>
+      <span class="habit-icon">🔀</span>
+      <div class="habit-text">
+        <strong>Mixing Factory Method with Simple Factory logic</strong>
+        <span>A common mistake: declaring <code>createProduct()</code> as abstract (Factory Method) but then also adding static if/switch in the base class. Pick one approach — don't hybrid them. It confuses readers and defeats the purpose.</span>
+      </div>
+    </li>
+    <li>
+      <span class="habit-icon">📦</span>
+      <div class="habit-text">
+        <strong>Using Abstract Factory when you only have one product type</strong>
+        <span>If you only create <code>Button</code> objects — not a family — Abstract Factory is overkill. Use Factory Method. Over-engineering with Abstract Factory for a single product type creates unnecessary interfaces and classes.</span>
+      </div>
+    </li>
+    <li>
+      <span class="habit-icon">🧩</span>
+      <div class="habit-text">
+        <strong>Products from different families being mixed accidentally</strong>
+        <span>When not using Abstract Factory, developers often mix products: a Windows Button with a Mac Checkbox. Abstract Factory exists precisely to prevent this. If consistency between related objects matters, always use Abstract Factory.</span>
+      </div>
+    </li>
+    <li>
+      <span class="habit-icon">🧪</span>
+      <div class="habit-text">
+        <strong>Hard-coding the factory selection in business logic</strong>
+        <span>Writing <code>if (os.equals("windows")) new WindowsFactory()</code> deep inside <code>Application</code> defeats the pattern. Factory selection belongs at the entry point (<code>main</code> or a config class) — not buried in business logic.</span>
+      </div>
+    </li>
+    <li>
+      <span class="habit-icon">🔍</span>
+      <div class="habit-text">
+        <strong>Not programming to the interface in the client</strong>
+        <span>Writing <code>WindowsButton btn = factory.createButton()</code> instead of <code>Button btn = factory.createButton()</code> immediately ties the client to a concrete type. Always use the product interface as the variable type.</span>
+      </div>
+    </li>
+  </ul>
+
+  <div class="tip-card danger">
+    <div class="tip-icon">🚨</div>
+    <div class="tip-content">
+      <strong>The Golden Rule</strong>
+      <p>If you see a <strong>concrete class name on the right side of <code>=</code></strong> anywhere in your business logic (outside of factories and <code>main</code>), your factory pattern isn't working. All client code should only reference interfaces.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════
+     08 — CHEATSHEET
+════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">08 — Summary</div>
+  <h2>📋 Quick Cheatsheet</h2>
+
+  <table>
+    <tr><th>Topic</th><th>Key Point</th></tr>
+    <tr><td><strong>Core Idea</strong></td><td>Replace <code>new ConcreteClass()</code> with a factory call — decouple creation from use</td></tr>
+    <tr><td><strong>Simple Factory</strong></td><td>Static method + switch. Easy but violates OCP when types grow. Not official GoF.</td></tr>
+    <tr><td><strong>Factory Method</strong></td><td>Abstract base class, subclasses override <code>createProduct()</code>. OCP compliant. One product type.</td></tr>
+    <tr><td><strong>Abstract Factory</strong></td><td>Interface with multiple create methods. Produces entire families. Guarantees product compatibility.</td></tr>
+    <tr><td><strong>When to upgrade</strong></td><td>Simple → Factory Method when adding types hurts. Factory Method → Abstract Factory when you have product families.</td></tr>
+    <tr><td><strong>Client rule</strong></td><td>Client must only ever reference <em>interfaces</em> — never concrete class names after construction</td></tr>
+    <tr><td><strong>SOLID alignment</strong></td><td>Factory Method satisfies OCP · Abstract Factory satisfies DIP · Both support SRP</td></tr>
+  </table>
+
+  <div class="tip-card info">
+    <div class="tip-icon">🎯</div>
+    <div class="tip-content">
+      <strong>Interview Answer Formula</strong>
+      <p>Start by explaining the problem (<code>new</code> everywhere = tight coupling). Then present Simple Factory as the naive fix. Identify its OCP violation. Introduce Factory Method as the proper OCP-compliant solution. Finally explain Abstract Factory as the extension for creating related families. The evolution story shows full understanding.</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<div class="footer">
+  LLD Notes — Factory Pattern &nbsp;·&nbsp; Simple Factory · Factory Method · Abstract Factory &nbsp;·&nbsp; Java
+</div>
+
+</body>
+</html>
