@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Singleton Pattern — LLD Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1f2d45;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --good: #10b981;
+    --bad: #ef4444;
+    --warn: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --code-bg: #0d1117;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, #0a0e17 0%, #0f1729 40%, #120d24 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 40px 50px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,212,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 30%;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .solid-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.25);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .solid-badge span { font-size: 16px; }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5vw, 54px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 560px;
+    margin-bottom: 28px;
+  }
+
+  .hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 32px;
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 20px;
+  }
+  h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+  }
+
+  .section { margin-bottom: 56px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+  /* ── DEFINITION BOX ── */
+  .definition-box {
+    background: linear-gradient(135deg, rgba(0,212,255,0.05), rgba(124,58,237,0.05));
+    border: 1px solid rgba(0,212,255,0.2);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin: 24px 0;
+    position: relative;
+  }
+  .definition-box .quote-icon {
+    font-size: 48px;
+    color: rgba(0,212,255,0.1);
+    font-family: Georgia, serif;
+    position: absolute;
+    top: 8px; right: 16px;
+    line-height: 1;
+  }
+  .definition-box p {
+    font-size: 16px;
+    color: #cbd5e1;
+    font-style: italic;
+    line-height: 1.8;
+  }
+  .definition-box strong { color: var(--accent); font-style: normal; }
+
+  /* ── SIMPLE BOX ── */
+  .simple-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 26px;
+    margin: 20px 0;
+  }
+  .simple-box .emoji-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent2);
+    margin-bottom: 10px;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.5px;
+  }
+  .simple-box p { color: #94a3b8; font-size: 14px; margin: 0; }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+  }
+  .code-header .lang {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .code-header .filename { font-size: 12px; color: var(--accent); }
+
+  /* impl type badge in header */
+  .impl-badge {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .impl-badge.bad      { background: rgba(239,68,68,0.15);  color: var(--bad);  border: 1px solid rgba(239,68,68,0.3); }
+  .impl-badge.ok       { background: rgba(245,158,11,0.12); color: var(--warn); border: 1px solid rgba(245,158,11,0.3); }
+  .impl-badge.best     { background: rgba(16,185,129,0.12); color: var(--good); border: 1px solid rgba(16,185,129,0.3); }
+  .impl-badge.advanced { background: rgba(124,58,237,0.12); color: #a78bfa;     border: 1px solid rgba(124,58,237,0.3); }
+
+  .code-body {
+    padding: 20px 22px;
+    overflow-x: auto;
+    line-height: 1.8;
+  }
+  .code-body pre { white-space: pre; }
+
+  /* Syntax */
+  .kw   { color: #ff79c6; }
+  .cls  { color: #8be9fd; }
+  .fn   { color: #50fa7b; }
+  .str  { color: #f1fa8c; }
+  .cmt  { color: #6272a4; font-style: italic; }
+  .ann  { color: #ffb86c; }
+  .type { color: #bd93f9; }
+  .iface{ color: #00d4ff; }
+  .num  { color: #ff6b35; }
+  .kw2  { color: #8be9fd; }
+
+  /* ── IMPL TYPE CARD WRAPPER ── */
+  .impl-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 28px 0;
+  }
+  .impl-card.bad-impl      { border-color: rgba(239,68,68,0.25); }
+  .impl-card.ok-impl       { border-color: rgba(245,158,11,0.25); }
+  .impl-card.best-impl     { border-color: rgba(16,185,129,0.25); }
+  .impl-card.advanced-impl { border-color: rgba(124,58,237,0.25); }
+
+  .impl-card-header {
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .impl-card.bad-impl      .impl-card-header { background: rgba(239,68,68,0.06); }
+  .impl-card.ok-impl       .impl-card-header { background: rgba(245,158,11,0.05); }
+  .impl-card.best-impl     .impl-card-header { background: rgba(16,185,129,0.05); }
+  .impl-card.advanced-impl .impl-card-header { background: rgba(124,58,237,0.05); }
+
+  .impl-card-header .impl-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+  .impl-card-header .impl-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .impl-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 14px 22px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .meta-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .meta-pill.thread  { background: rgba(0,212,255,0.08);  color: var(--accent);  border: 1px solid rgba(0,212,255,0.2); }
+  .meta-pill.lazy    { background: rgba(124,58,237,0.08); color: #a78bfa;        border: 1px solid rgba(124,58,237,0.2); }
+  .meta-pill.perf    { background: rgba(16,185,129,0.08); color: var(--good);    border: 1px solid rgba(16,185,129,0.2); }
+  .meta-pill.danger  { background: rgba(239,68,68,0.08);  color: var(--bad);     border: 1px solid rgba(239,68,68,0.2); }
+  .meta-pill.warn    { background: rgba(245,158,11,0.08); color: var(--warn);    border: 1px solid rgba(245,158,11,0.2); }
+
+  .impl-card .code-block { margin: 0; border: none; border-radius: 0; }
+  .impl-card .code-header { border-radius: 0; }
+
+  /* ── PANEL GRID ── */
+  .panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  @media(max-width: 640px) { .panel-grid { grid-template-columns: 1fr; } }
+
+  .panel { border-radius: 10px; overflow: hidden; }
+  .panel-header {
+    padding: 12px 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel.bad  .panel-header { background: rgba(239,68,68,0.15);  color: var(--bad);  border-bottom: 1px solid rgba(239,68,68,0.2); }
+  .panel.good .panel-header { background: rgba(16,185,129,0.12); color: var(--good); border-bottom: 1px solid rgba(16,185,129,0.2); }
+  .panel.bad  { border: 1px solid rgba(239,68,68,0.2); }
+  .panel.good { border: 1px solid rgba(16,185,129,0.2); }
+  .panel .code-block { margin: 0; border: none; border-radius: 0; }
+  .panel .code-header { border-radius: 0; }
+
+  /* ── TIP CARDS ── */
+  .tip-card {
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 16px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .tip-card.warn    { background: rgba(245,158,11,0.07);  border: 1px solid rgba(245,158,11,0.25); }
+  .tip-card.danger  { background: rgba(239,68,68,0.07);   border: 1px solid rgba(239,68,68,0.25); }
+  .tip-card.success { background: rgba(16,185,129,0.07);  border: 1px solid rgba(16,185,129,0.25); }
+  .tip-card.info    { background: rgba(0,212,255,0.05);   border: 1px solid rgba(0,212,255,0.2); }
+  .tip-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+  .tip-content strong { display: block; font-family: 'Syne', sans-serif; font-size: 14px; margin-bottom: 5px; }
+  .tip-card.warn    .tip-content strong { color: var(--warn); }
+  .tip-card.danger  .tip-content strong { color: var(--bad); }
+  .tip-card.success .tip-content strong { color: var(--good); }
+  .tip-card.info    .tip-content strong { color: var(--accent); }
+  .tip-content p { font-size: 14px; color: #94a3b8; }
+
+  /* ── COMPARISON TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 13px;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 12px 14px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  td {
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    color: #94a3b8;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  td strong { color: #e2e8f0; }
+  td.good-cell { color: var(--good); }
+  td.bad-cell  { color: var(--bad); }
+  td.warn-cell { color: var(--warn); }
+
+  /* ── HABIT LIST ── */
+  .habit-list { list-style: none; margin: 16px 0; }
+  .habit-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+  }
+  .habit-list li:hover { border-color: rgba(239,68,68,0.4); }
+  .habit-icon { font-size: 18px; flex-shrink: 0; }
+  .habit-text strong { display: block; font-size: 14px; color: #f1f5f9; font-family: 'Syne', sans-serif; margin-bottom: 3px; }
+  .habit-text span   { font-size: 13px; color: var(--muted); }
+
+  /* ── ARROW FLOW ── */
+  .arrow-flow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .flow-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #cbd5e1;
+  }
+  .flow-box.info-box { border-color: rgba(0,212,255,0.4);  color: var(--accent); background: rgba(0,212,255,0.05); }
+  .flow-arrow { color: var(--accent); font-size: 18px; }
+
+  /* ── IMPL STEP DIVIDER ── */
+  .impl-step-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 32px 0 12px;
+  }
+  .impl-step-label::before, .impl-step-label::after {
+    content: '';
+    height: 1px;
+    width: 30px;
+    background: var(--border);
+  }
+
+  /* ── INLINE CODE ── */
+  code {
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="solid-badge"><span>🏭</span> Creational Patterns — LLD with Java</div>
+  <h1>Singleton<br><em>Pattern</em></h1>
+  <p class="hero-sub">Ensure a class has only one instance and provide a global access point to it — with every implementation type explained.</p>
+  <div class="hero-tags">
+    <span class="tag">Java</span>
+    <span class="tag">LLD</span>
+    <span class="tag">Creational</span>
+    <span class="tag">GoF Pattern</span>
+    <span class="tag">Thread Safety</span>
+    <span class="tag">Lazy vs Eager</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ── 01 WHAT IS SINGLETON ── -->
+  <div class="section">
+    <div class="section-label">01 — Definition</div>
+    <h2>What is the Singleton Pattern?</h2>
+
+    <div class="definition-box">
+      <div class="quote-icon">"</div>
+      <p>"Ensure a class has <strong>only one instance</strong>, and provide a <strong>global point of access</strong> to it."</p>
+      <p style="margin-top:10px; font-size:13px; color:#475569; font-style:normal;">— Gang of Four (GoF), Design Patterns, 1994</p>
+    </div>
+
+    <div class="simple-box">
+      <div class="emoji-title">🧠 In Plain English</div>
+      <p>No matter how many times you ask for the object, you always get back the <strong>same one</strong>. It's like the President of a country — there is only one at a time, and everyone refers to the same person. You cannot create a new one while the current one exists.</p>
+    </div>
+
+    <div class="arrow-flow">
+      <div class="flow-box">Thread A → getInstance()</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box info-box">Same Object</div>
+      <div class="flow-arrow">←</div>
+      <div class="flow-box">Thread B → getInstance()</div>
+    </div>
+    <p style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace; margin-top:4px;">↑ Multiple callers — always the same single instance returned.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 02 WHY USE IT ── -->
+  <div class="section">
+    <div class="section-label">02 — Why Use It</div>
+    <h2>Why Do We Use Singleton?</h2>
+
+    <table>
+      <tr><th>Use Case</th><th>Without Singleton</th><th>With Singleton</th></tr>
+      <tr>
+        <td><strong>DB Connection Pool</strong></td>
+        <td class="bad-cell">New pool created per request — memory explodes</td>
+        <td class="good-cell">One shared pool reused across entire app</td>
+      </tr>
+      <tr>
+        <td><strong>Logger</strong></td>
+        <td class="bad-cell">Each class creates its own logger — inconsistent logs</td>
+        <td class="good-cell">One logger instance writes all logs uniformly</td>
+      </tr>
+      <tr>
+        <td><strong>App Config</strong></td>
+        <td class="bad-cell">Config file read multiple times — wasteful and inconsistent</td>
+        <td class="good-cell">Read once, shared everywhere as one instance</td>
+      </tr>
+      <tr>
+        <td><strong>Thread Pool</strong></td>
+        <td class="bad-cell">Multiple pools, threads not managed globally</td>
+        <td class="good-cell">One pool manages all threads app-wide</td>
+      </tr>
+      <tr>
+        <td><strong>Cache</strong></td>
+        <td class="bad-cell">Multiple cache objects — stale, inconsistent data</td>
+        <td class="good-cell">Single cache — all reads/writes go to one place</td>
+      </tr>
+    </table>
+
+    <div class="tip-card info">
+      <div class="tip-icon">💡</div>
+      <div class="tip-content">
+        <strong>The 3 Rules of Singleton</strong>
+        <p>1. <strong>Private constructor</strong> — no one can call <code>new MyClass()</code> from outside.<br>
+           2. <strong>Private static instance</strong> — the one object lives inside the class itself.<br>
+           3. <strong>Public static <code>getInstance()</code></strong> — the only way to get the object.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 03 ALL IMPLEMENTATIONS ── -->
+  <div class="section">
+    <div class="section-label">03 — All Implementation Types</div>
+    <h2>🔨 Every Type of Singleton Implementation</h2>
+
+    <p style="color:#94a3b8; margin-bottom: 8px;">There are <strong>6 main ways</strong> to implement Singleton in Java — each with different trade-offs around thread safety, laziness, and simplicity. Know all of them for interviews.</p>
+
+    <!-- ───────────────────────────────────── -->
+    <!-- TYPE 1: EAGER -->
+    <!-- ───────────────────────────────────── -->
+    <div class="impl-card ok-impl">
+      <div class="impl-card-header">
+        <div>
+          <div class="impl-title">① Eager Initialization</div>
+          <div class="impl-subtitle">Simplest — instance created at class load time</div>
+        </div>
+        <span class="impl-badge ok">⚡ Eager</span>
+      </div>
+      <div class="impl-meta">
+        <span class="meta-pill thread">✅ Thread Safe</span>
+        <span class="meta-pill lazy">❌ Not Lazy</span>
+        <span class="meta-pill perf">✅ Simple</span>
+        <span class="meta-pill warn">⚠️ Wastes memory if unused</span>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">EagerSingleton.java</span>
+        </div>
+        <div class="code-body"><pre><span class="kw">public class</span> <span class="cls">EagerSingleton</span> {
+
+    <span class="cmt">// ✅ Instance created when class is loaded by JVM</span>
+    <span class="kw">private static final</span> <span class="cls">EagerSingleton</span> instance = <span class="kw">new</span> <span class="cls">EagerSingleton</span>();
+
+    <span class="cmt">// ✅ Private constructor — no one outside can call new</span>
+    <span class="kw">private</span> <span class="fn">EagerSingleton</span>() {}
+
+    <span class="kw">public static</span> <span class="cls">EagerSingleton</span> <span class="fn">getInstance</span>() {
+        <span class="kw">return</span> instance;
+    }
+}
+
+<span class="cmt">// Usage</span>
+<span class="cls">EagerSingleton</span> obj1 = <span class="cls">EagerSingleton</span>.<span class="fn">getInstance</span>();
+<span class="cls">EagerSingleton</span> obj2 = <span class="cls">EagerSingleton</span>.<span class="fn">getInstance</span>();
+System.out.println(obj1 == obj2); <span class="cmt">// true — same object</span></pre></div>
+      </div>
+    </div>
+
+    <div class="tip-card warn">
+      <div class="tip-icon">⚠️</div>
+      <div class="tip-content">
+        <strong>Problem with Eager</strong>
+        <p>Instance is created even if it's <strong>never used</strong> during the app's lifetime. If the constructor is heavy (opens DB connection, reads files), this wastes resources.</p>
+      </div>
+    </div>
+
+    <!-- ───────────────────────────────────── -->
+    <!-- TYPE 2: LAZY (NOT THREAD SAFE) -->
+    <!-- ───────────────────────────────────── -->
+    <div class="impl-card bad-impl">
+      <div class="impl-card-header">
+        <div>
+          <div class="impl-title">② Lazy Initialization (Not Thread Safe)</div>
+          <div class="impl-subtitle">Creates instance only when first needed — but BROKEN in multithreading</div>
+        </div>
+        <span class="impl-badge bad">❌ Broken</span>
+      </div>
+      <div class="impl-meta">
+        <span class="meta-pill danger">❌ NOT Thread Safe</span>
+        <span class="meta-pill lazy">✅ Lazy</span>
+        <span class="meta-pill warn">⚠️ Single-thread only</span>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">LazySingleton.java — ❌ NOT THREAD SAFE</span>
+        </div>
+        <div class="code-body"><pre><span class="kw">public class</span> <span class="cls">LazySingleton</span> {
+
+    <span class="kw">private static</span> <span class="cls">LazySingleton</span> instance; <span class="cmt">// null initially</span>
+
+    <span class="kw">private</span> <span class="fn">LazySingleton</span>() {}
+
+    <span class="kw">public static</span> <span class="cls">LazySingleton</span> <span class="fn">getInstance</span>() {
+        <span class="cmt">// ❌ DANGER: Two threads can both see null simultaneously!</span>
+        <span class="kw">if</span> (instance == <span class="kw">null</span>) {
+            instance = <span class="kw">new</span> <span class="cls">LazySingleton</span>(); <span class="cmt">// ❌ Both threads create new objects!</span>
+        }
+        <span class="kw">return</span> instance;
+    }
+}</pre></div>
+      </div>
+    </div>
+
+    <div class="tip-card danger">
+      <div class="tip-icon">🚨</div>
+      <div class="tip-content">
+        <strong>Race Condition — The Bug</strong>
+        <p>Thread A checks <code>instance == null</code> → true. Before A creates the object, Thread B also checks → also true. <strong>Both threads create a new instance</strong>. Now you have two objects. Singleton is broken. Never use this in production.</p>
+      </div>
+    </div>
+
+    <!-- ───────────────────────────────────── -->
+    <!-- TYPE 3: SYNCHRONIZED METHOD -->
+    <!-- ───────────────────────────────────── -->
+    <div class="impl-card ok-impl">
+      <div class="impl-card-header">
+        <div>
+          <div class="impl-title">③ Thread-Safe with synchronized Method</div>
+          <div class="impl-subtitle">Fixes thread safety — but every call locks, hurting performance</div>
+        </div>
+        <span class="impl-badge ok">⚠️ Slow</span>
+      </div>
+      <div class="impl-meta">
+        <span class="meta-pill thread">✅ Thread Safe</span>
+        <span class="meta-pill lazy">✅ Lazy</span>
+        <span class="meta-pill warn">⚠️ Performance bottleneck</span>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">SynchronizedSingleton.java</span>
+        </div>
+        <div class="code-body"><pre><span class="kw">public class</span> <span class="cls">SynchronizedSingleton</span> {
+
+    <span class="kw">private static</span> <span class="cls">SynchronizedSingleton</span> instance;
+
+    <span class="kw">private</span> <span class="fn">SynchronizedSingleton</span>() {}
+
+    <span class="cmt">// ✅ synchronized ensures only ONE thread enters at a time</span>
+    <span class="kw">public static synchronized</span> <span class="cls">SynchronizedSingleton</span> <span class="fn">getInstance</span>() {
+        <span class="kw">if</span> (instance == <span class="kw">null</span>) {
+            instance = <span class="kw">new</span> <span class="cls">SynchronizedSingleton</span>();
+        }
+        <span class="kw">return</span> instance;
+    }
+}</pre></div>
+      </div>
+    </div>
+
+    <div class="tip-card warn">
+      <div class="tip-icon">⚠️</div>
+      <div class="tip-content">
+        <strong>Performance Problem</strong>
+        <p>After the instance is created, <code>synchronized</code> is still acquired on <strong>every single call</strong> to <code>getInstance()</code>. Locking is expensive. In a high-throughput system this becomes a serious bottleneck. This is why Double-Checked Locking was invented.</p>
+      </div>
+    </div>
+
+    <!-- ───────────────────────────────────── -->
+    <!-- TYPE 4: DOUBLE CHECKED LOCKING -->
+    <!-- ───────────────────────────────────── -->
+    <div class="impl-card best-impl">
+      <div class="impl-card-header">
+        <div>
+          <div class="impl-title">④ Double-Checked Locking (DCL)</div>
+          <div class="impl-subtitle">Best of both worlds — lazy + thread safe + fast</div>
+        </div>
+        <span class="impl-badge best">⭐ Recommended</span>
+      </div>
+      <div class="impl-meta">
+        <span class="meta-pill thread">✅ Thread Safe</span>
+        <span class="meta-pill lazy">✅ Lazy</span>
+        <span class="meta-pill perf">✅ High Performance</span>
+        <span class="meta-pill thread">⚠️ Needs volatile</span>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">DCLSingleton.java — ⭐ RECOMMENDED</span>
+        </div>
+        <div class="code-body"><pre><span class="kw">public class</span> <span class="cls">DCLSingleton</span> {
+
+    <span class="cmt">// ⚠️ volatile is CRITICAL — prevents instruction reordering by JVM</span>
+    <span class="kw">private static volatile</span> <span class="cls">DCLSingleton</span> instance;
+
+    <span class="kw">private</span> <span class="fn">DCLSingleton</span>() {}
+
+    <span class="kw">public static</span> <span class="cls">DCLSingleton</span> <span class="fn">getInstance</span>() {
+
+        <span class="cmt">// 1st check — no locking needed if already created (fast path)</span>
+        <span class="kw">if</span> (instance == <span class="kw">null</span>) {
+
+            <span class="kw">synchronized</span> (<span class="cls">DCLSingleton</span>.<span class="kw">class</span>) {
+
+                <span class="cmt">// 2nd check — another thread may have created it while we waited</span>
+                <span class="kw">if</span> (instance == <span class="kw">null</span>) {
+                    instance = <span class="kw">new</span> <span class="cls">DCLSingleton</span>();
+                }
+            }
+        }
+        <span class="kw">return</span> instance;
+    }
+}</pre></div>
+      </div>
+    </div>
+
+    <div class="tip-card success">
+      <div class="tip-icon">✅</div>
+      <div class="tip-content">
+        <strong>Why This Works — The Two Checks Explained</strong>
+        <p><strong>Check 1 (outside lock):</strong> Once instance is created, 99.9% of calls hit this and return immediately — no locking overhead at all.<br>
+        <strong>Check 2 (inside lock):</strong> Handles the rare race at startup — ensures only one thread actually calls <code>new</code>.<br>
+        <strong><code>volatile</code> keyword:</strong> Prevents the JVM from reordering instructions during object construction — without it, another thread could see a half-constructed object.</p>
+      </div>
+    </div>
+
+    <!-- ───────────────────────────────────── -->
+    <!-- TYPE 5: BILL PUGH / INNER CLASS -->
+    <!-- ───────────────────────────────────── -->
+    <div class="impl-card best-impl">
+      <div class="impl-card-header">
+        <div>
+          <div class="impl-title">⑤ Bill Pugh — Static Inner Class</div>
+          <div class="impl-subtitle">Cleanest & most elegant — relies on JVM class loading guarantee</div>
+        </div>
+        <span class="impl-badge best">⭐ Most Elegant</span>
+      </div>
+      <div class="impl-meta">
+        <span class="meta-pill thread">✅ Thread Safe</span>
+        <span class="meta-pill lazy">✅ Lazy</span>
+        <span class="meta-pill perf">✅ No synchronized needed</span>
+        <span class="meta-pill perf">✅ No volatile needed</span>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">BillPughSingleton.java — ⭐ MOST ELEGANT</span>
+        </div>
+        <div class="code-body"><pre><span class="kw">public class</span> <span class="cls">BillPughSingleton</span> {
+
+    <span class="kw">private</span> <span class="fn">BillPughSingleton</span>() {}
+
+    <span class="cmt">// ✅ Inner class is NOT loaded until getInstance() is called (lazy!)</span>
+    <span class="cmt">// ✅ JVM guarantees class loading is thread-safe (no synchronized needed!)</span>
+    <span class="kw">private static class</span> <span class="cls">Holder</span> {
+        <span class="kw">private static final</span> <span class="cls">BillPughSingleton</span> INSTANCE = <span class="kw">new</span> <span class="cls">BillPughSingleton</span>();
+    }
+
+    <span class="kw">public static</span> <span class="cls">BillPughSingleton</span> <span class="fn">getInstance</span>() {
+        <span class="kw">return</span> <span class="cls">Holder</span>.INSTANCE; <span class="cmt">// triggers Holder class load on first call</span>
+    }
+}</pre></div>
+      </div>
+    </div>
+
+    <div class="tip-card success">
+      <div class="tip-icon">✅</div>
+      <div class="tip-content">
+        <strong>Why Bill Pugh is Brilliant</strong>
+        <p>The <code>Holder</code> inner class is <strong>not loaded when <code>BillPughSingleton</code> loads</strong> — it's only loaded when <code>getInstance()</code> is first called. The JVM's class-loading mechanism is inherently thread-safe, so no <code>synchronized</code> or <code>volatile</code> is needed. Clean, fast, lazy, and thread-safe all at once.</p>
+      </div>
+    </div>
+
+    <!-- ───────────────────────────────────── -->
+    <!-- TYPE 6: ENUM SINGLETON -->
+    <!-- ───────────────────────────────────── -->
+    <div class="impl-card advanced-impl">
+      <div class="impl-card-header">
+        <div>
+          <div class="impl-title">⑥ Enum Singleton</div>
+          <div class="impl-subtitle">Joshua Bloch's recommendation — serialization & reflection safe</div>
+        </div>
+        <span class="impl-badge advanced">🔒 Bulletproof</span>
+      </div>
+      <div class="impl-meta">
+        <span class="meta-pill thread">✅ Thread Safe</span>
+        <span class="meta-pill perf">✅ Serialization Safe</span>
+        <span class="meta-pill perf">✅ Reflection Safe</span>
+        <span class="meta-pill lazy">❌ Not Lazy (eager)</span>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="lang">Java</span>
+          <span class="filename">EnumSingleton.java — 🔒 REFLECTION & SERIALIZATION SAFE</span>
+        </div>
+        <div class="code-body"><pre><span class="cmt">// ✅ The simplest and most bulletproof Singleton in Java</span>
+<span class="kw">public enum</span> <span class="cls">EnumSingleton</span> {
+    INSTANCE; <span class="cmt">// ← that's it. This IS the singleton.</span>
+
+    <span class="kw">public void</span> <span class="fn">doSomething</span>() {
+        System.out.println(<span class="str">"Singleton via Enum!"</span>);
+    }
+}
+
+<span class="cmt">// Usage</span>
+<span class="cls">EnumSingleton</span>.INSTANCE.<span class="fn">doSomething</span>();
+
+<span class="cmt">// ✅ Reflection cannot break it — JVM prevents enum instantiation</span>
+<span class="cmt">// ✅ Serialization cannot create a second instance — JVM guarantees it</span></pre></div>
+      </div>
+    </div>
+
+    <div class="tip-card info">
+      <div class="tip-icon">🔒</div>
+      <div class="tip-content">
+        <strong>Why Enum is the Most Bulletproof</strong>
+        <p>Other Singleton types can be broken by <strong>Reflection</strong> (<code>Constructor.setAccessible(true)</code>) or <strong>Serialization</strong> (deserializing creates a new instance). Enum is immune to both — the JVM itself prevents anyone from creating a second enum instance. Recommended by Joshua Bloch in <em>Effective Java</em>.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 04 COMPARISON TABLE ── -->
+  <div class="section">
+    <div class="section-label">04 — Side by Side</div>
+    <h2>📊 All 6 Types Compared</h2>
+
+    <table>
+      <tr>
+        <th>Type</th>
+        <th>Thread Safe?</th>
+        <th>Lazy?</th>
+        <th>Performance</th>
+        <th>Reflection Safe?</th>
+        <th>Use When</th>
+      </tr>
+      <tr>
+        <td><strong>① Eager</strong></td>
+        <td class="good-cell">✅ Yes</td>
+        <td class="bad-cell">❌ No</td>
+        <td class="good-cell">✅ Fast</td>
+        <td class="bad-cell">❌ No</td>
+        <td>Small, cheap objects always needed</td>
+      </tr>
+      <tr>
+        <td><strong>② Lazy (unsafe)</strong></td>
+        <td class="bad-cell">❌ No</td>
+        <td class="good-cell">✅ Yes</td>
+        <td class="good-cell">✅ Fast</td>
+        <td class="bad-cell">❌ No</td>
+        <td>❌ Never in production</td>
+      </tr>
+      <tr>
+        <td><strong>③ synchronized</strong></td>
+        <td class="good-cell">✅ Yes</td>
+        <td class="good-cell">✅ Yes</td>
+        <td class="bad-cell">❌ Slow</td>
+        <td class="bad-cell">❌ No</td>
+        <td>Low-traffic apps only</td>
+      </tr>
+      <tr>
+        <td><strong>④ DCL</strong></td>
+        <td class="good-cell">✅ Yes</td>
+        <td class="good-cell">✅ Yes</td>
+        <td class="good-cell">✅ Fast</td>
+        <td class="bad-cell">❌ No</td>
+        <td>⭐ General purpose recommendation</td>
+      </tr>
+      <tr>
+        <td><strong>⑤ Bill Pugh</strong></td>
+        <td class="good-cell">✅ Yes</td>
+        <td class="good-cell">✅ Yes</td>
+        <td class="good-cell">✅ Fastest</td>
+        <td class="bad-cell">❌ No</td>
+        <td>⭐ When you want elegance + performance</td>
+      </tr>
+      <tr>
+        <td><strong>⑥ Enum</strong></td>
+        <td class="good-cell">✅ Yes</td>
+        <td class="bad-cell">❌ No</td>
+        <td class="good-cell">✅ Fast</td>
+        <td class="good-cell">✅ Yes</td>
+        <td>🔒 When serialization/reflection safety needed</td>
+      </tr>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 05 REAL EXAMPLE ── -->
+  <div class="section">
+    <div class="section-label">05 — Real World Example</div>
+    <h2>🗄️ Database Connection Pool — Singleton in Action</h2>
+
+    <p style="color:#94a3b8; margin-bottom: 18px;">The most classic real-world Singleton — a database connection pool. You never want multiple pools; they'd each hold separate connections, waste memory, and cause connection limit errors.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="lang">Java</span>
+        <span class="filename">DatabasePool.java — Bill Pugh Singleton</span>
+      </div>
+      <div class="code-body"><pre><span class="kw">public class</span> <span class="cls">DatabasePool</span> {
+
+    <span class="kw">private</span> <span class="type">String</span> connectionUrl;
+    <span class="kw">private</span> <span class="type">int</span>    poolSize;
+
+    <span class="kw">private</span> <span class="fn">DatabasePool</span>() {
+        <span class="cmt">// Simulate loading config and opening connections</span>
+        <span class="kw">this</span>.connectionUrl = <span class="str">"jdbc:mysql://localhost:3306/mydb"</span>;
+        <span class="kw">this</span>.poolSize      = <span class="num">10</span>;
+        System.out.println(<span class="str">"✅ DB Pool initialised — "</span> + poolSize + <span class="str">" connections"</span>);
+    }
+
+    <span class="kw">private static class</span> <span class="cls">Holder</span> {
+        <span class="kw">private static final</span> <span class="cls">DatabasePool</span> INSTANCE = <span class="kw">new</span> <span class="cls">DatabasePool</span>();
+    }
+
+    <span class="kw">public static</span> <span class="cls">DatabasePool</span> <span class="fn">getInstance</span>() {
+        <span class="kw">return</span> <span class="cls">Holder</span>.INSTANCE;
+    }
+
+    <span class="kw">public</span> <span class="type">String</span> <span class="fn">getConnection</span>() {
+        <span class="kw">return</span> <span class="str">"Connection from pool @ "</span> + connectionUrl;
+    }
+}
+
+<span class="cmt">// ── Usage anywhere in app ──────────────────────────────────────</span>
+<span class="kw">public class</span> <span class="cls">OrderService</span> {
+    <span class="kw">public void</span> <span class="fn">saveOrder</span>(String order) {
+        <span class="cls">DatabasePool</span> pool = <span class="cls">DatabasePool</span>.<span class="fn">getInstance</span>(); <span class="cmt">// same object every time</span>
+        String conn = pool.<span class="fn">getConnection</span>();
+        System.out.println(<span class="str">"Saving order using: "</span> + conn);
+    }
+}
+
+<span class="kw">public class</span> <span class="cls">UserService</span> {
+    <span class="kw">public void</span> <span class="fn">findUser</span>(<span class="type">int</span> id) {
+        <span class="cls">DatabasePool</span> pool = <span class="cls">DatabasePool</span>.<span class="fn">getInstance</span>(); <span class="cmt">// same object — no new pool!</span>
+        String conn = pool.<span class="fn">getConnection</span>();
+        System.out.println(<span class="str">"Finding user using: "</span> + conn);
+    }
+}</pre></div>
+    </div>
+
+    <div class="tip-card success">
+      <div class="tip-icon">✅</div>
+      <div class="tip-content">
+        <strong>Result</strong>
+        <p>No matter how many services call <code>DatabasePool.getInstance()</code>, the constructor runs <strong>exactly once</strong>. All services share the same pool. No wasted connections, no inconsistent state.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 06 BAD HABITS ── -->
+  <div class="section">
+    <div class="section-label">06 — Watch Out</div>
+    <h2>🚩 Bad Habits to Avoid</h2>
+
+    <ul class="habit-list">
+      <li>
+        <span class="habit-icon">🔓</span>
+        <div class="habit-text">
+          <strong>Forgetting <code>volatile</code> in DCL</strong>
+          <span>Double-Checked Locking without <code>volatile</code> is broken. The JVM can reorder instructions during object construction, letting another thread see a partially-constructed instance. Always pair DCL with <code>volatile</code>.</span>
+        </div>
+      </li>
+      <li>
+        <span class="habit-icon">🧵</span>
+        <div class="habit-text">
+          <strong>Using Lazy (non-synchronized) in multithreaded code</strong>
+          <span>The basic lazy singleton without <code>synchronized</code> will create multiple instances under concurrent load. This is the most common Singleton bug in real codebases.</span>
+        </div>
+      </li>
+      <li>
+        <span class="habit-icon">🔍</span>
+        <div class="habit-text">
+          <strong>Not protecting against Reflection attacks</strong>
+          <span>Using <code>Constructor.setAccessible(true)</code>, anyone can break your Singleton and create a new instance. Only Enum Singleton is immune. For other types, add a guard in the private constructor: <code>if (instance != null) throw new RuntimeException()</code>.</span>
+        </div>
+      </li>
+      <li>
+        <span class="habit-icon">📦</span>
+        <div class="habit-text">
+          <strong>Singleton for everything — overuse</strong>
+          <span>Singleton creates hidden global state. Overusing it makes code tightly coupled, hard to test (you can't inject a mock), and causes bugs that are difficult to reproduce. Use it only for truly shared, stateless or carefully managed resources.</span>
+        </div>
+      </li>
+      <li>
+        <span class="habit-icon">🧪</span>
+        <div class="habit-text">
+          <strong>Singleton is an anti-pattern for unit testing</strong>
+          <span>Because you can't inject a mock, Singleton makes unit tests depend on real external resources (real DB, real file system). Always expose the dependency through an interface alongside the Singleton to keep code testable.</span>
+        </div>
+      </li>
+      <li>
+        <span class="habit-icon">💾</span>
+        <div class="habit-text">
+          <strong>Forgetting serialization safety</strong>
+          <span>If your Singleton implements <code>Serializable</code>, deserializing it creates a brand new instance — breaking the contract. Add <code>protected Object readResolve() { return getInstance(); }</code> to fix this, or just use Enum Singleton.</span>
+        </div>
+      </li>
+      <li>
+        <span class="habit-icon">🏛️</span>
+        <div class="habit-text">
+          <strong>Storing mutable state in Singleton</strong>
+          <span>Since every thread shares the same instance, mutable state inside a Singleton can cause race conditions. Either make the Singleton immutable/stateless, or use proper synchronisation for every state-changing method.</span>
+        </div>
+      </li>
+    </ul>
+
+    <div class="tip-card warn">
+      <div class="tip-icon">💡</div>
+      <div class="tip-content">
+        <strong>The Reflection Guard (add to any non-Enum Singleton)</strong>
+        <p>Add this inside the private constructor to block reflection attacks:</p>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="lang">Java</span>
+        <span class="filename">Reflection-safe private constructor</span>
+      </div>
+      <div class="code-body"><pre><span class="kw">private</span> <span class="fn">MySingleton</span>() {
+    <span class="cmt">// Guard against reflection attack</span>
+    <span class="kw">if</span> (<span class="cls">Holder</span>.INSTANCE != <span class="kw">null</span>) {
+        <span class="kw">throw new</span> <span class="cls">RuntimeException</span>(<span class="str">"Use getInstance() — Singleton cannot be instantiated directly!"</span>);
+    }
+}</pre></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── 07 CHEATSHEET ── -->
+  <div class="section">
+    <div class="section-label">07 — Summary</div>
+    <h2>📋 Quick Cheatsheet</h2>
+
+    <table>
+      <tr><th>Topic</th><th>Key Point</th></tr>
+      <tr><td><strong>What</strong></td><td>Ensures a class has exactly one instance with a global access point</td></tr>
+      <tr><td><strong>3 Rules</strong></td><td>Private constructor · Private static instance · Public static <code>getInstance()</code></td></tr>
+      <tr><td><strong>Best for interviews</strong></td><td>DCL with <code>volatile</code> OR Bill Pugh Inner Class — know both cold</td></tr>
+      <tr><td><strong>Production recommendation</strong></td><td>Bill Pugh (elegant + lazy + thread-safe, no keywords needed)</td></tr>
+      <tr><td><strong>Serialization/Reflection safe</strong></td><td>Only Enum Singleton is bulletproof against both</td></tr>
+      <tr><td><strong>Real-world uses</strong></td><td>DB connection pool, Logger, App Config, Cache, Thread Pool</td></tr>
+      <tr><td><strong>Biggest risk</strong></td><td>Overuse creates hidden global state — hard to test and debug</td></tr>
+    </table>
+
+    <div class="tip-card info">
+      <div class="tip-icon">🎯</div>
+      <div class="tip-content">
+        <strong>Interview Answer Formula</strong>
+        <p>Start with Eager → explain its problem → introduce Lazy → explain thread-safety bug → fix with synchronized (but slow) → introduce DCL with <code>volatile</code> → then reveal Bill Pugh as the cleanest solution → finish with Enum for bulletproof needs. This progression shows full depth of knowledge.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  LLD Notes — Singleton Pattern &nbsp;·&nbsp; Creational Patterns &nbsp;·&nbsp; Java
+</div>
+
+</body>
+</html>
